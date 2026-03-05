@@ -25,6 +25,7 @@ body {
   border-radius:10px;
   box-shadow:0 0 10px rgba(0,0,0,0.2);
   margin-top:20px;
+  position: relative;
 }
 .logo {
   text-align:center;
@@ -76,8 +77,13 @@ button {
 .instalar {
   background:#ff9800;
   color:white;
-  font-size:14px;
-  margin-bottom:10px;
+  font-size:12px;
+  padding:8px 10px;
+  position:fixed;
+  top:10px;
+  right:10px;
+  border-radius:6px;
+  z-index:1000;
 }
 .footer {
   text-align:center;
@@ -91,8 +97,8 @@ button {
 
 <div class="container">
 
-<!-- Botão Baixar App pequeno no topo -->
-<button class="instalar" id="btnInstall" style="display:none;">📲 Baixar App</button>
+<!-- Botão Baixar App pequeno no canto superior direito -->
+<button class="instalar" id="btnInstall">📲 Baixar App</button>
 
 <div class="logo">
   <img src="logo.png">
@@ -147,7 +153,7 @@ function enviarPedido(){
 ⚡ Pedido Urgente: ${urgente}
 
 💬 *Aviso:* O motoboy entrará em contato pelo WhatsApp para informar valor e disponibilidade da entrega.`
-  
+
   let url = "https://wa.me/5522992150249?text=" + encodeURIComponent(mensagem)
   window.open(url)
 }
@@ -165,7 +171,6 @@ let deferredPrompt
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault()
   deferredPrompt = e
-  document.getElementById("btnInstall").style.display = "block"
 })
 document.getElementById("btnInstall").addEventListener("click", async () => {
   if(deferredPrompt){
