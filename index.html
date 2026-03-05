@@ -39,10 +39,22 @@ h2 {
 input, textarea {
   width:100%;
   padding:10px;
-  margin:8px 0;
+  margin:6px 0;
   border-radius:6px;
   border:1px solid #ccc;
   font-size:16px;
+}
+label {
+  font-size:14px;
+  display:block;
+  margin-top:10px;
+}
+.checkbox-container {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:5px;
+  font-size:14px;
 }
 button {
   width:100%;
@@ -94,6 +106,14 @@ button {
 <input type="text" id="origem" placeholder="Endereço de coleta">
 <button class="gps" onclick="pegarLocalizacao()">📍 Usar minha localização</button>
 <input type="text" id="destino" placeholder="Endereço de entrega">
+<input type="text" id="nomeRecebedor" placeholder="Nome do recebedor">
+<input type="text" id="telefoneRecebedor" placeholder="Telefone do recebedor">
+
+<div class="checkbox-container">
+  <input type="checkbox" id="urgente">
+  <label for="urgente">Pedido Urgente (marque apenas se for realmente urgente)</label>
+</div>
+
 <textarea id="detalhes" placeholder="Detalhes do pedido (opcional)"></textarea>
 <button class="whatsapp" onclick="enviarPedido()">🚀 Solicitar Entrega</button>
 
@@ -106,19 +126,28 @@ function enviarPedido(){
   let telefone = document.getElementById("telefone").value
   let origem = document.getElementById("origem").value
   let destino = document.getElementById("destino").value
+  let nomeRec = document.getElementById("nomeRecebedor").value
+  let telRec = document.getElementById("telefoneRecebedor").value
   let detalhes = document.getElementById("detalhes").value
+  let urgente = document.getElementById("urgente").checked ? "✅ Sim" : "Não"
 
   let mensagem =
 `🚀 *NOVO PEDIDO MASTER EXPRESS*
 
-👤 Nome: ${nome}
+👤 Solicitante: ${nome}
 📞 Telefone: ${telefone}
 
 📍 Coleta: ${origem}
 📦 Entrega: ${destino}
 
-📝 Detalhes: ${detalhes}`
+👥 Recebedor: ${nomeRec}
+📞 Telefone: ${telRec}
 
+📝 Detalhes: ${detalhes}
+⚡ Pedido Urgente: ${urgente}
+
+💬 *Aviso:* O motoboy entrará em contato pelo WhatsApp para informar valor e disponibilidade da entrega.`
+  
   let url = "https://wa.me/5522992150249?text=" + encodeURIComponent(mensagem)
   window.open(url)
 }
