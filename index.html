@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Master Express</title>
+
+<link rel="manifest" href="manifest.json">
+
+<style>
+body{
+font-family:Arial;
+background:#111;
+color:white;
+text-align:center;
+padding:20px;
+}
+
+.logo{
+width:120px;
+margin-bottom:20px;
+}
+
+input, textarea{
+width:90%;
+padding:10px;
+margin:5px;
+border-radius:8px;
+border:none;
+}
+
+button{
+padding:15px;
+border:none;
+border-radius:10px;
+margin:10px;
+font-size:16px;
+}
+
+.whatsapp{
+background:#25D366;
+color:white;
+width:90%;
+}
+
+.instalar{
+background:#007BFF;
+color:white;
+width:90%;
+}
+</style>
+</head>
+
+<body>
+
+<img src="logo.png" class="logo">
+
+<h2>Master Express</h2>
+<p>Entrega rápida no mesmo dia</p>
+
+<input id="nome" placeholder="Seu nome" required>
+<input id="telefone" placeholder="Seu telefone">
+
+<input id="retirada" placeholder="Endereço de retirada">
+
+<input id="entrega" placeholder="Endereço de entrega">
+
+<textarea id="pedido" placeholder="Descreva o pedido"></textarea>
+
+<button class="whatsapp" onclick="enviarPedido()">
+Enviar pedido no WhatsApp
+</button>
+
+<button class="instalar" id="instalarApp">
+Baixar App
+</button>
+
+<script>
+
+function enviarPedido(){
+
+let nome = document.getElementById("nome").value
+let telefone = document.getElementById("telefone").value
+let retirada = document.getElementById("retirada").value
+let entrega = document.getElementById("entrega").value
+let pedido = document.getElementById("pedido").value
+
+let mensagem =
+`Novo pedido Master Express
+
+Nome: ${nome}
+Telefone: ${telefone}
+
+Retirada: ${retirada}
+
+Entrega: ${entrega}
+
+Pedido:
+${pedido}`
+
+let url = "https://wa.me/5522992150249?text=" + encodeURIComponent(mensagem)
+
+window.open(url)
+}
+
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e)=>{
+e.preventDefault();
+deferredPrompt = e;
+
+document.getElementById("instalarApp").onclick = ()=>{
+deferredPrompt.prompt();
+}
+});
+
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('sw.js')
+}
+
+</script>
+
+</body>
+</html>
