@@ -37,7 +37,7 @@ header img{
   margin-bottom:15px;
 }
 
-input, select, button{
+input, select, textarea, button{
   width:100%;
   padding:12px;
   margin-top:10px;
@@ -65,6 +65,11 @@ button{
   border-radius:10px;
 }
 
+.urgente-label{
+  font-size:14px;
+  margin-top:10px;
+}
+
 footer{
   text-align:center;
   padding:10px;
@@ -84,9 +89,25 @@ footer{
 <div class="container">
 
   <div class="card">
+    <h3>Dados do remetente</h3>
+    <input id="nomeRemetente" placeholder="Nome da pessoa/loja" required>
+    <input id="telRemetente" placeholder="Telefone do remetente" required>
+  </div>
+
+  <div class="card">
     <h3>Endereço de coleta</h3>
     <input id="coleta" placeholder="Digite o endereço de coleta">
     <button onclick="usarLocalizacao()">📍 Usar minha localização</button>
+  </div>
+
+  <div class="card">
+    <h3>Dados do recebedor</h3>
+    <input id="nomeRecebedor" placeholder="Nome do recebedor" required>
+    <input id="telRecebedor" placeholder="Telefone do recebedor" required>
+    <label class="urgente-label">
+      <input type="checkbox" id="urgente"> Marque apenas se a entrega for urgente
+    </label>
+    <textarea id="observacoes" placeholder="Observações (opcional)"></textarea>
   </div>
 
   <div class="card">
@@ -105,6 +126,7 @@ footer{
       <option>Pix</option>
       <option>Cartão</option>
     </select>
+
     <div id="preco">Valor da entrega: R$0</div>
     <button onclick="enviarPedido()">Enviar pedido</button>
   </div>
@@ -120,10 +142,7 @@ footer{
 
 <script>
 var map = L.map('map').setView([-22.376, -41.784], 13);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  maxZoom:19
-}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 
 var markerColeta, markerEntrega;
 
@@ -133,6 +152,27 @@ function usarLocalizacao(){
     let lat = pos.coords.latitude;
     let lon = pos.coords.longitude;
     document.getElementById("coleta").value = `${lat},${lon}`;
+
+    if(markerColeta) map.removeLayer(markerColeta);
+
+    markerColeta = L.marker([lat,lon]).addTo(map)
+      .bindPopup("Coleta").openPopup();
+
+    map.setView([lat,lon],15);
+
+    calcularPreco();
+  });
+}
+
+// Marcar endereço de coleta manual (opcional)
+function marcarColeta(){
+  let endereco = document.getElementById("coleta").value;
+  if(!endereco) return;
+  fetch("https://nominatim.openstreetmap.org/search?format=json&q="+endereco)
+  .then(res => res.json())
+  .then(data => {
+    let lat = parseFloat(data[0].lat);
+    let lon = parseFloat(data[0].lon);
 
     if(markerColeta) map.removeLayer(markerColeta);
 
@@ -189,20 +229,35 @@ function calcularPreco(){
 function enviarPedido(){
   if(!markerColeta || !markerEntrega) return alert("Marque coleta e entrega no mapa");
 
+  let nomeR = document.getElementById("nomeRemetente").value;
+  let telR = document.getElementById("telRemetente").value;
+  let nomeRec = document.getElementById("nomeRecebedor").value;
+  let telRec = document.getElementById("telRecebedor").value;
+  let observacoes = document.getElementById("observacoes").value || "Não informado";
   let preco = document.getElementById("preco").innerText;
   let pagamento = document.getElementById("pagamento").value;
   let coleta = document.getElementById("coleta").value;
   let entrega = document.getElementById("entrega").value;
+  let urgente = document.getElementById("urgente").checked ? "Sim" : "Não";
 
   let mensagem =
 `🚀 *NOVO PEDIDO MASTER EXPRESS*
 
+👤 Remetente: ${nomeR}
+📞 Telefone: ${telR}
+
 📍 Coleta: ${coleta}
 📦 Entrega: ${entrega}
+
+👥 Recebedor: ${nomeRec}
+📞 Telefone: ${telRec}
+
 💰 ${preco}
 💳 Pagamento: ${pagamento}
+⚠ Urgente: ${urgente}
+📝 Observações: ${observacoes}
 
-O motoboy entrará em contato via WhatsApp para informar o valor final e disponibilidade.`;
+O motoboy entrará em contato via WhatsApp para informar valor final e disponibilidade.`;
 
   window.open("https://wa.me/5522992150249?text="+encodeURIComponent(mensagem));
 }
