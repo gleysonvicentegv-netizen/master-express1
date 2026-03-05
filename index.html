@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Master Express</title>
 
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#25D366">
+<link rel="apple-touch-icon" href="logo.png">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
@@ -13,22 +17,31 @@ body{
   margin:0;
   background:#f2f2f2;
 }
-
 header{
   background:#000;
   color:#fff;
   text-align:center;
   padding:15px;
+  position:relative;
 }
-
 header img{
   width:80px;
 }
-
+#btnInstall{
+  position:absolute;
+  top:10px;
+  right:10px;
+  background:#ff9800;
+  color:white;
+  border:none;
+  border-radius:6px;
+  padding:6px 10px;
+  font-size:14px;
+  cursor:pointer;
+}
 .container{
   padding:15px;
 }
-
 .card{
   background:white;
   padding:15px;
@@ -36,7 +49,6 @@ header img{
   box-shadow:0 2px 5px rgba(0,0,0,0.2);
   margin-bottom:15px;
 }
-
 input, select, textarea, button{
   width:100%;
   padding:12px;
@@ -45,31 +57,26 @@ input, select, textarea, button{
   border:1px solid #ccc;
   font-size:16px;
 }
-
 button{
   background:#000;
   color:white;
   font-weight:bold;
   border:none;
 }
-
 #preco{
   font-size:20px;
   margin-top:10px;
   font-weight:bold;
   text-align:center;
 }
-
 #map{
   height:300px;
   border-radius:10px;
 }
-
 .urgente-label{
   font-size:14px;
   margin-top:10px;
 }
-
 footer{
   text-align:center;
   padding:10px;
@@ -83,25 +90,22 @@ footer{
 
 <header>
   <img src="logo.png">
+  <button id="btnInstall" style="display:none;">📲 Baixar App</button>
   <h2>Master Express</h2>
 </header>
 
 <div class="container">
 
   <div class="card">
-    <h3>Dados do remetente</h3>
-    <input id="nomeRemetente" placeholder="Nome da pessoa/loja" required>
-    <input id="telRemetente" placeholder="Telefone do remetente" required>
-  </div>
-
-  <div class="card">
-    <h3>Endereço de coleta</h3>
-    <input id="coleta" placeholder="Digite o endereço de coleta">
+    <h3>Remetente</h3>
+    <input id="nomeRemetente" placeholder="Nome" required>
+    <input id="telRemetente" placeholder="Telefone" required>
+    <input id="endRemetente" placeholder="Endereço do remetente (opcional)">
     <button onclick="usarLocalizacao()">📍 Usar minha localização</button>
   </div>
 
   <div class="card">
-    <h3>Dados do recebedor</h3>
+    <h3>Recebedor</h3>
     <input id="nomeRecebedor" placeholder="Nome do recebedor" required>
     <input id="telRecebedor" placeholder="Telefone do recebedor" required>
     <label class="urgente-label">
@@ -112,7 +116,10 @@ footer{
 
   <div class="card">
     <h3>Endereço de entrega</h3>
-    <input id="entrega" placeholder="Digite o endereço de entrega">
+    <input id="entregaRua" placeholder="Rua" required>
+    <input id="entregaNum" placeholder="Número" required>
+    <input id="entregaBairro" placeholder="Bairro" required>
+    <input id="entregaCidade" placeholder="Cidade" required>
     <button onclick="marcarEntrega()">📍 Marcar no mapa</button>
   </div>
 
@@ -146,109 +153,79 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).a
 
 var markerColeta, markerEntrega;
 
-// Usar localização do cliente para coleta
+// Usar localização do remetente
 function usarLocalizacao(){
   navigator.geolocation.getCurrentPosition(function(pos){
     let lat = pos.coords.latitude;
     let lon = pos.coords.longitude;
-    document.getElementById("coleta").value = `${lat},${lon}`;
-
     if(markerColeta) map.removeLayer(markerColeta);
-
-    markerColeta = L.marker([lat,lon]).addTo(map)
-      .bindPopup("Coleta").openPopup();
-
+    markerColeta = L.marker([lat,lon]).addTo(map).bindPopup("Coleta").openPopup();
     map.setView([lat,lon],15);
-
+    document.getElementById("endRemetente").value = `https://maps.google.com/?q=${lat},${lon}`;
     calcularPreco();
-  });
+  })
 }
 
-// Marcar endereço de coleta manual (opcional)
-function marcarColeta(){
-  let endereco = document.getElementById("coleta").value;
-  if(!endereco) return;
-  fetch("https://nominatim.openstreetmap.org/search?format=json&q="+endereco)
-  .then(res => res.json())
-  .then(data => {
-    let lat = parseFloat(data[0].lat);
-    let lon = parseFloat(data[0].lon);
-
-    if(markerColeta) map.removeLayer(markerColeta);
-
-    markerColeta = L.marker([lat,lon]).addTo(map)
-      .bindPopup("Coleta").openPopup();
-
-    map.setView([lat,lon],15);
-
-    calcularPreco();
-  });
+// Combina os campos do endereço de entrega
+function getEnderecoEntrega(){
+  return document.getElementById("entregaRua").value + ", " +
+         document.getElementById("entregaNum").value + ", " +
+         document.getElementById("entregaBairro").value + ", " +
+         document.getElementById("entregaCidade").value;
 }
 
-// Marcar endereço de entrega no mapa
+// Marcar entrega no mapa
 function marcarEntrega(){
-  let endereco = document.getElementById("entrega").value;
-  if(!endereco) return alert("Digite o endereço de entrega");
-
-  fetch("https://nominatim.openstreetmap.org/search?format=json&q="+endereco)
+  let endereco = getEnderecoEntrega();
+  if(!endereco) return alert("Digite o endereço de entrega completo");
+  fetch("https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(endereco))
   .then(res => res.json())
   .then(data => {
+    if(!data[0]) return alert("Endereço de entrega não encontrado!");
     let lat = parseFloat(data[0].lat);
     let lon = parseFloat(data[0].lon);
-
-    if(markerEntrega) map.removeLayer(markerEntrega);
-
-    markerEntrega = L.marker([lat,lon]).addTo(map)
-      .bindPopup("Entrega").openPopup();
-
+    if(markerEntrega) map.removeLayer(markerEntrega)
+    markerEntrega = L.marker([lat,lon]).addTo(map).bindPopup("Entrega").openPopup();
     map.setView([lat,lon],15);
-
     calcularPreco();
-  });
+  })
 }
 
 // Calcular valor da entrega
 function calcularPreco(){
   if(!markerColeta || !markerEntrega) return;
-
   let from = turf.point([markerColeta.getLatLng().lng, markerColeta.getLatLng().lat]);
   let to = turf.point([markerEntrega.getLatLng().lng, markerEntrega.getLatLng().lat]);
-
-  let distance = turf.distance(from, to, {units:'kilometers'});
-
+  let distance = turf.distance(from,to,{units:'kilometers'});
   let preco = 10;
-  if(distance > 3){
-    preco = 10 + ((distance - 3) * 1.5);
-  }
+  if(distance>3) preco = 10 + ((distance-3)*1.5);
   preco = preco.toFixed(2);
-
   document.getElementById("preco").innerText = "Valor da entrega: R$"+preco;
 }
 
-// Enviar pedido para WhatsApp
+// Enviar pedido via WhatsApp
 function enviarPedido(){
   if(!markerColeta || !markerEntrega) return alert("Marque coleta e entrega no mapa");
 
   let nomeR = document.getElementById("nomeRemetente").value;
   let telR = document.getElementById("telRemetente").value;
+  let endR = document.getElementById("endRemetente").value;
   let nomeRec = document.getElementById("nomeRecebedor").value;
   let telRec = document.getElementById("telRecebedor").value;
   let observacoes = document.getElementById("observacoes").value || "Não informado";
   let preco = document.getElementById("preco").innerText;
   let pagamento = document.getElementById("pagamento").value;
-  let coleta = document.getElementById("coleta").value;
-  let entrega = document.getElementById("entrega").value;
+  let entrega = getEnderecoEntrega();
   let urgente = document.getElementById("urgente").checked ? "Sim" : "Não";
 
-  let mensagem =
+  let msg = 
 `🚀 *NOVO PEDIDO MASTER EXPRESS*
 
 👤 Remetente: ${nomeR}
 📞 Telefone: ${telR}
+📍 Local remetente: ${endR}
 
-📍 Coleta: ${coleta}
 📦 Entrega: ${entrega}
-
 👥 Recebedor: ${nomeRec}
 📞 Telefone: ${telRec}
 
@@ -259,7 +236,26 @@ function enviarPedido(){
 
 O motoboy entrará em contato via WhatsApp para informar valor final e disponibilidade.`;
 
-  window.open("https://wa.me/5522992150249?text="+encodeURIComponent(mensagem));
+  window.open("https://wa.me/5522992150249?text="+encodeURIComponent(msg));
+}
+
+// PWA - botão instalar
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById("btnInstall").style.display = "block";
+});
+document.getElementById("btnInstall").addEventListener("click", async () => {
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt = null;
+  }
+});
+
+// Registrar service worker
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
 }
 </script>
 
