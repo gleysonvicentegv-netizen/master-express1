@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Master Express</title>
-
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#25D366">
 <link rel="apple-touch-icon" href="logo.png">
@@ -13,42 +12,50 @@
 <style>
 body {
   font-family: Arial, sans-serif;
-  background:#f2f2f2;
-  margin:0;
-  padding:0;
+  background: #f2f2f2;
+  margin: 0;
+  padding: 0;
 }
 .container {
-  max-width:500px;
-  margin:auto;
-  background:white;
-  padding:20px;
-  border-radius:10px;
-  box-shadow:0 0 10px rgba(0,0,0,0.2);
-  margin-top:20px;
+  max-width: 480px;
+  margin: 20px auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
   position: relative;
 }
 .logo {
-  text-align:center;
+  text-align: center;
 }
 .logo img {
-  width:120px;
+  width: 120px;
+  margin-bottom: 10px;
 }
 h2 {
-  text-align:center;
-  margin-bottom:10px;
+  text-align: center;
+  margin-bottom: 8px;
+  font-size: 24px;
 }
-input, textarea {
-  width:100%;
-  padding:10px;
-  margin:6px 0;
-  border-radius:6px;
-  border:1px solid #ccc;
-  font-size:16px;
+p.subtitle {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #555;
 }
-label {
-  font-size:14px;
-  display:block;
-  margin-top:10px;
+input, textarea, select {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+.card-receiver {
+  background: #f9f9f9;
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 10px;
 }
 .checkbox-container {
   display:flex;
@@ -56,40 +63,44 @@ label {
   gap:10px;
   margin-top:5px;
   font-size:14px;
+  color:#d32f2f;
 }
 button {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border:none;
-  border-radius:6px;
-  font-size:16px;
-  cursor:pointer;
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
 }
 .whatsapp {
-  background:#25D366;
-  color:white;
+  background: #25D366;
+  color: white;
+  font-weight: bold;
 }
 .gps {
-  background:#007bff;
-  color:white;
+  background: #007bff;
+  color: white;
+  font-weight: bold;
 }
 .instalar {
-  background:#ff9800;
-  color:white;
-  font-size:12px;
-  padding:8px 10px;
-  position:fixed;
-  top:10px;
-  right:10px;
-  border-radius:6px;
-  z-index:1000;
+  background: #ff9800;
+  color: white;
+  font-size: 12px;
+  padding: 8px 10px;
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  border-radius: 6px;
+  z-index: 1000;
+  font-weight: bold;
 }
 .footer {
-  text-align:center;
-  margin-top:15px;
-  font-size:14px;
-  color:#555;
+  text-align: center;
+  margin-top: 15px;
+  font-size: 14px;
+  color: #555;
 }
 </style>
 </head>
@@ -97,23 +108,34 @@ button {
 
 <div class="container">
 
-<!-- Botão Baixar App pequeno no canto superior direito -->
+<!-- Botão Baixar App -->
 <button class="instalar" id="btnInstall">📲 Baixar App</button>
 
 <div class="logo">
-  <img src="logo.png">
+  <img src="logo.png" alt="Master Express">
 </div>
 
 <h2>Master Express</h2>
-<p>Entrega rápida no mesmo dia</p>
+<p class="subtitle">Entrega rápida no mesmo dia</p>
 
 <input type="text" id="nome" placeholder="Seu nome" required>
 <input type="text" id="telefone" placeholder="Telefone">
 <input type="text" id="origem" placeholder="Endereço de coleta">
 <button class="gps" onclick="pegarLocalizacao()">📍 Usar minha localização</button>
 <input type="text" id="destino" placeholder="Endereço de entrega">
-<input type="text" id="nomeRecebedor" placeholder="Nome do recebedor">
-<input type="text" id="telefoneRecebedor" placeholder="Telefone do recebedor">
+
+<div class="card-receiver">
+  <input type="text" id="nomeRecebedor" placeholder="Nome do recebedor">
+  <input type="text" id="telefoneRecebedor" placeholder="Telefone do recebedor">
+</div>
+
+<select id="pagamento" required>
+  <option value="">Forma de pagamento</option>
+  <option>Pix</option>
+  <option>Dinheiro</option>
+  <option>Cartão</option>
+  <option>Empresa (Faturado)</option>
+</select>
 
 <div class="checkbox-container">
   <input type="checkbox" id="urgente">
@@ -128,14 +150,15 @@ button {
 
 <script>
 function enviarPedido(){
-  let nome = document.getElementById("nome").value
-  let telefone = document.getElementById("telefone").value
-  let origem = document.getElementById("origem").value
-  let destino = document.getElementById("destino").value
-  let nomeRec = document.getElementById("nomeRecebedor").value
-  let telRec = document.getElementById("telefoneRecebedor").value
-  let detalhes = document.getElementById("detalhes").value
-  let urgente = document.getElementById("urgente").checked ? "✅ Sim" : "Não"
+  let nome = document.getElementById("nome").value;
+  let telefone = document.getElementById("telefone").value;
+  let origem = document.getElementById("origem").value;
+  let destino = document.getElementById("destino").value;
+  let nomeRec = document.getElementById("nomeRecebedor").value;
+  let telRec = document.getElementById("telefoneRecebedor").value;
+  let pagamento = document.getElementById("pagamento").value;
+  let detalhes = document.getElementById("detalhes").value;
+  let urgente = document.getElementById("urgente").checked ? "✅ Sim" : "Não";
 
   let mensagem =
 `🚀 *NOVO PEDIDO MASTER EXPRESS*
@@ -149,39 +172,40 @@ function enviarPedido(){
 👥 Recebedor: ${nomeRec}
 📞 Telefone: ${telRec}
 
+💰 Forma de pagamento: ${pagamento}
 📝 Detalhes: ${detalhes}
 ⚡ Pedido Urgente: ${urgente}
 
-💬 *Aviso:* O motoboy entrará em contato pelo WhatsApp para informar valor e disponibilidade da entrega.`
+💬 *Aviso:* O motoboy entrará em contato pelo WhatsApp para informar valor e disponibilidade da entrega.`;
 
-  let url = "https://wa.me/5522992150249?text=" + encodeURIComponent(mensagem)
-  window.open(url)
+  let url = "https://wa.me/5522992150249?text=" + encodeURIComponent(mensagem);
+  window.open(url);
 }
 
 function pegarLocalizacao(){
   navigator.geolocation.getCurrentPosition(function(pos){
-    let lat = pos.coords.latitude
-    let lon = pos.coords.longitude
-    document.getElementById("origem").value = `https://maps.google.com/?q=${lat},${lon}`
-  })
+    let lat = pos.coords.latitude;
+    let lon = pos.coords.longitude;
+    document.getElementById("origem").value = `https://maps.google.com/?q=${lat},${lon}`;
+  });
 }
 
 // PWA - botão instalar
-let deferredPrompt
+let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault()
-  deferredPrompt = e
-})
+  e.preventDefault();
+  deferredPrompt = e;
+});
 document.getElementById("btnInstall").addEventListener("click", async () => {
   if(deferredPrompt){
-    deferredPrompt.prompt()
-    deferredPrompt = null
+    deferredPrompt.prompt();
+    deferredPrompt = null;
   }
-})
+});
 
 // Registrar service worker
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js")
+  navigator.serviceWorker.register("sw.js");
 }
 </script>
 
