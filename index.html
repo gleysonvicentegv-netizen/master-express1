@@ -12,13 +12,13 @@
 
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f2f2f2;}
-header{background:#000;color:#fff;text-align:center;padding:15px;position:relative;}
+header{background:#333;color:#fff;text-align:center;padding:15px;position:relative;} /* cabeçalho cinza escuro */
 header img{width:80px;}
 #btnInstall{position:absolute;top:10px;right:10px;background:#ff9800;color:white;border:none;border-radius:6px;padding:6px 10px;font-size:14px;cursor:pointer;}
 .container{padding:15px;}
 .card{background:white;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.2);margin-bottom:15px;}
 input, select, textarea, button{width:100%;padding:12px;margin-top:10px;border-radius:8px;border:1px solid #ccc;font-size:16px;}
-button{background:#000;color:white;font-weight:bold;border:none;}
+button{background:#333;color:white;font-weight:bold;border:none;cursor:pointer;}
 #preco{font-size:18px;margin-top:10px;font-weight:bold;text-align:center;}
 #map{height:300px;border-radius:10px;}
 .urgente-label{font-size:14px;margin-top:10px;}
@@ -166,7 +166,6 @@ function enviarPedido(){
   let entrega=getEnderecoEntrega();
   let urgente=document.getElementById("urgente").checked?"Sim":"Não";
 
-  // Salvar dados do remetente
   localStorage.nomeRemetente=nomeR;
   localStorage.telRemetente=telR;
   localStorage.endRemetente=endR;
@@ -191,7 +190,7 @@ document.getElementById("btnInstall").addEventListener("click", async()=>{
   if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;}
 });
 
-// Service Worker
+// Registrar SW
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 </script>
 
