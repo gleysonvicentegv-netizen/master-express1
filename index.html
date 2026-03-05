@@ -8,149 +8,89 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#25D366">
 <link rel="apple-touch-icon" href="logo.png">
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
-body{
-  font-family: Arial, sans-serif;
-  margin:0;
-  background:#f2f2f2;
-}
-header{
-  background:#000;
-  color:#fff;
-  text-align:center;
-  padding:15px;
-  position:relative;
-}
-header img{
-  width:80px;
-}
-#btnInstall{
-  position:absolute;
-  top:10px;
-  right:10px;
-  background:#ff9800;
-  color:white;
-  border:none;
-  border-radius:6px;
-  padding:6px 10px;
-  font-size:14px;
-  cursor:pointer;
-}
-.container{
-  padding:15px;
-}
-.card{
-  background:white;
-  padding:15px;
-  border-radius:10px;
-  box-shadow:0 2px 5px rgba(0,0,0,0.2);
-  margin-bottom:15px;
-}
-input, select, textarea, button{
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:8px;
-  border:1px solid #ccc;
-  font-size:16px;
-}
-button{
-  background:#000;
-  color:white;
-  font-weight:bold;
-  border:none;
-}
-#preco{
-  font-size:20px;
-  margin-top:10px;
-  font-weight:bold;
-  text-align:center;
-}
-#map{
-  height:300px;
-  border-radius:10px;
-}
-.urgente-label{
-  font-size:14px;
-  margin-top:10px;
-}
-footer{
-  text-align:center;
-  padding:10px;
-  font-size:14px;
-  color:#555;
-}
+body{font-family:Arial,sans-serif;margin:0;background:#f2f2f2;}
+header{background:#000;color:#fff;text-align:center;padding:15px;position:relative;}
+header img{width:80px;}
+#btnInstall{position:absolute;top:10px;right:10px;background:#ff9800;color:white;border:none;border-radius:6px;padding:6px 10px;font-size:14px;cursor:pointer;}
+.container{padding:15px;}
+.card{background:white;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.2);margin-bottom:15px;}
+input, select, textarea, button{width:100%;padding:12px;margin-top:10px;border-radius:8px;border:1px solid #ccc;font-size:16px;}
+button{background:#000;color:white;font-weight:bold;border:none;}
+#preco{font-size:18px;margin-top:10px;font-weight:bold;text-align:center;}
+#map{height:300px;border-radius:10px;}
+.urgente-label{font-size:14px;margin-top:10px;}
+footer{text-align:center;padding:10px;font-size:14px;color:#555;}
 </style>
 </head>
-
 <body>
 
 <header>
-  <img src="logo.png">
-  <button id="btnInstall" style="display:none;">📲 Baixar App</button>
-  <h2>Master Express</h2>
+<img src="logo.png">
+<button id="btnInstall" style="display:none;">📲 Baixar App</button>
+<h2>Master Express</h2>
 </header>
 
 <div class="container">
 
-  <div class="card">
-    <h3>Remetente</h3>
-    <input id="nomeRemetente" placeholder="Nome" required>
-    <input id="telRemetente" placeholder="Telefone" required>
-    <input id="endRemetente" placeholder="Endereço do remetente (opcional)">
-    <button onclick="usarLocalizacao()">📍 Usar minha localização</button>
-  </div>
+<!-- Remetente -->
+<div class="card">
+<h3>Remetente</h3>
+<input id="nomeRemetente" placeholder="Nome" required>
+<input id="telRemetente" placeholder="Telefone" required>
+<input id="endRemetente" placeholder="Endereço (opcional)">
+<button onclick="usarLocalizacao()">📍 Usar minha localização</button>
+</div>
 
-  <div class="card">
-    <h3>Recebedor</h3>
-    <input id="nomeRecebedor" placeholder="Nome do recebedor" required>
-    <input id="telRecebedor" placeholder="Telefone do recebedor" required>
-    <label class="urgente-label">
-      <input type="checkbox" id="urgente"> Marque apenas se a entrega for urgente
-    </label>
-    <textarea id="observacoes" placeholder="Observações (opcional)"></textarea>
-  </div>
+<!-- Recebedor -->
+<div class="card">
+<h3>Recebedor</h3>
+<input id="nomeRecebedor" placeholder="Nome do recebedor" required>
+<input id="telRecebedor" placeholder="Telefone do recebedor" required>
+<label class="urgente-label">
+<input type="checkbox" id="urgente"> Marque apenas se a entrega for urgente
+</label>
+<textarea id="observacoes" placeholder="Observações (opcional)"></textarea>
+</div>
 
-  <div class="card">
-    <h3>Endereço de entrega</h3>
-    <input id="entregaRua" placeholder="Rua" required>
-    <input id="entregaNum" placeholder="Número" required>
-    <input id="entregaBairro" placeholder="Bairro" required>
-    <input id="entregaCidade" placeholder="Cidade" required>
-    <button onclick="marcarEntrega()">📍 Marcar no mapa</button>
-  </div>
+<!-- Endereço de entrega -->
+<div class="card">
+<h3>Endereço de entrega</h3>
+<input id="entregaRua" placeholder="Rua" required>
+<input id="entregaNum" placeholder="Número" required>
+<input id="entregaBairro" placeholder="Bairro" required>
+<input id="entregaCidade" placeholder="Cidade" required>
+<button onclick="marcarEntrega()">📍 Marcar no mapa</button>
+</div>
 
-  <div class="card">
-    <div id="map"></div>
-  </div>
+<!-- Mapa -->
+<div class="card">
+<div id="map"></div>
+</div>
 
-  <div class="card">
-    <select id="pagamento">
-      <option>Dinheiro</option>
-      <option>Pix</option>
-      <option>Cartão</option>
-    </select>
-
-    <div id="preco">Valor da entrega: R$0</div>
-    <button onclick="enviarPedido()">Enviar pedido</button>
-  </div>
+<!-- Pagamento e envio -->
+<div class="card">
+<select id="pagamento">
+<option>Dinheiro</option>
+<option>Pix</option>
+<option>Cartão</option>
+</select>
+<div id="preco">Valor da entrega: R$0</div>
+<button onclick="enviarPedido()">Enviar pedido</button>
+</div>
 
 </div>
 
-<footer>
-  Master Express • Entrega rápida em Macaé
-</footer>
+<footer>Master Express • Entrega rápida em Macaé</footer>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
 <script>
-var map = L.map('map').setView([-22.376, -41.784], 13);
+var map = L.map('map').setView([-22.376,-41.784],13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-
 var markerColeta, markerEntrega;
 
 // Usar localização do remetente
@@ -163,10 +103,10 @@ function usarLocalizacao(){
     map.setView([lat,lon],15);
     document.getElementById("endRemetente").value = `https://maps.google.com/?q=${lat},${lon}`;
     calcularPreco();
-  })
+  });
 }
 
-// Combina os campos do endereço de entrega
+// Obter endereço completo da entrega
 function getEnderecoEntrega(){
   return document.getElementById("entregaRua").value + ", " +
          document.getElementById("entregaNum").value + ", " +
@@ -179,84 +119,64 @@ function marcarEntrega(){
   let endereco = getEnderecoEntrega();
   if(!endereco) return alert("Digite o endereço de entrega completo");
   fetch("https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(endereco))
-  .then(res => res.json())
-  .then(data => {
+  .then(res=>res.json())
+  .then(data=>{
     if(!data[0]) return alert("Endereço de entrega não encontrado!");
     let lat = parseFloat(data[0].lat);
     let lon = parseFloat(data[0].lon);
-    if(markerEntrega) map.removeLayer(markerEntrega)
+    if(markerEntrega) map.removeLayer(markerEntrega);
     markerEntrega = L.marker([lat,lon]).addTo(map).bindPopup("Entrega").openPopup();
     map.setView([lat,lon],15);
     calcularPreco();
-  })
+  });
 }
 
-// Calcular valor da entrega
+// Calcular preço
 function calcularPreco(){
-  if(!markerColeta || !markerEntrega) return;
+  if(!markerColeta||!markerEntrega) return;
   let from = turf.point([markerColeta.getLatLng().lng, markerColeta.getLatLng().lat]);
   let to = turf.point([markerEntrega.getLatLng().lng, markerEntrega.getLatLng().lat]);
   let distance = turf.distance(from,to,{units:'kilometers'});
   let preco = 10;
   if(distance>3) preco = 10 + ((distance-3)*1.5);
   preco = preco.toFixed(2);
-  document.getElementById("preco").innerText = "Valor da entrega: R$"+preco;
+  document.getElementById("preco").innerText="Valor da entrega: R$"+preco;
 }
 
-// Enviar pedido via WhatsApp
+// Enviar pedido
 function enviarPedido(){
-  if(!markerColeta || !markerEntrega) return alert("Marque coleta e entrega no mapa");
-
-  let nomeR = document.getElementById("nomeRemetente").value;
-  let telR = document.getElementById("telRemetente").value;
-  let endR = document.getElementById("endRemetente").value;
-  let nomeRec = document.getElementById("nomeRecebedor").value;
-  let telRec = document.getElementById("telRecebedor").value;
-  let observacoes = document.getElementById("observacoes").value || "Não informado";
-  let preco = document.getElementById("preco").innerText;
-  let pagamento = document.getElementById("pagamento").value;
-  let entrega = getEnderecoEntrega();
-  let urgente = document.getElementById("urgente").checked ? "Sim" : "Não";
-
-  let msg = 
-`🚀 *NOVO PEDIDO MASTER EXPRESS*
-
-👤 Remetente: ${nomeR}
-📞 Telefone: ${telR}
-📍 Local remetente: ${endR}
-
-📦 Entrega: ${entrega}
-👥 Recebedor: ${nomeRec}
-📞 Telefone: ${telRec}
-
-💰 ${preco}
-💳 Pagamento: ${pagamento}
-⚠ Urgente: ${urgente}
-📝 Observações: ${observacoes}
-
+  if(!markerColeta||!markerEntrega) return alert("Marque coleta e entrega no mapa");
+  let nomeR=document.getElementById("nomeRemetente").value;
+  let telR=document.getElementById("telRemetente").value;
+  let endR=document.getElementById("endRemetente").value;
+  let nomeRec=document.getElementById("nomeRecebedor").value;
+  let telRec=document.getElementById("telRecebedor").value;
+  let observacoes=document.getElementById("observacoes").value||"Não informado";
+  let preco=document.getElementById("preco").innerText;
+  let pagamento=document.getElementById("pagamento").value;
+  let entrega=getEnderecoEntrega();
+  let urgente=document.getElementById("urgente").checked?"Sim":"Não";
+  let msg = `🚀 *NOVO PEDIDO MASTER EXPRESS*\n
+👤 Remetente: ${nomeR}\n📞 Telefone: ${telR}\n📍 Local remetente: ${endR}\n
+📦 Entrega: ${entrega}\n👥 Recebedor: ${nomeRec}\n📞 Telefone: ${telRec}\n
+💰 ${preco}\n💳 Pagamento: ${pagamento}\n⚠ Urgente: ${urgente}\n📝 Observações: ${observacoes}\n
 O motoboy entrará em contato via WhatsApp para informar valor final e disponibilidade.`;
-
   window.open("https://wa.me/5522992150249?text="+encodeURIComponent(msg));
 }
 
 // PWA - botão instalar
 let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
+window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById("btnInstall").style.display = "block";
+  deferredPrompt=e;
+  document.getElementById("btnInstall").style.display="block";
 });
-document.getElementById("btnInstall").addEventListener("click", async () => {
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-    deferredPrompt = null;
-  }
+document.getElementById("btnInstall").addEventListener("click", async()=>{
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;}
 });
 
-// Registrar service worker
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js");
-}
+// Service Worker
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 </script>
 
 </body>
