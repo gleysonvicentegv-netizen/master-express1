@@ -1,14 +1,20 @@
 {
 "name": "Master Express",
 "short_name": "Master Express",
-"start_url": "index.html",
+"start_url": "/master-express/",
 "display": "standalone",
-"background_color": "#111",
-"theme_color": "#111",
+"background_color": "#ffffff",
+"theme_color": "#25D366",
+"orientation": "portrait",
 "icons": [
 {
 "src": "logo.png",
 "sizes": "192x192",
+"type": "image/png"
+},
+{
+"src": "logo.png",
+"sizes": "512x512",
 "type": "image/png"
 }
 ]
