@@ -1,21 +1,21 @@
 {
-"name": "Master Express",
-"short_name": "Master Express",
-"start_url": "/master-express/",
-"display": "standalone",
-"background_color": "#ffffff",
-"theme_color": "#25D366",
-"orientation": "portrait",
-"icons": [
-{
-"src": "logo.png",
-"sizes": "192x192",
-"type": "image/png"
-},
-{
-"src": "logo.png",
-"sizes": "512x512",
-"type": "image/png"
-}
-]
+  "name": "Master Express",
+  "short_name": "MasterExpress",
+  "description": "Entregas rápidas em Macaé",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#25D366",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
