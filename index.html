@@ -1,284 +1,211 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Master Express</title>
 
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#ffffff">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
-
 body{
-font-family:Arial;
-background:#f2f2f2;
-margin:0;
-padding:0;
+  font-family: Arial, sans-serif;
+  margin:0;
+  background:#f2f2f2;
 }
 
-/* tela de abertura */
-
-#splash{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:white;
-display:flex;
-justify-content:center;
-align-items:center;
-flex-direction:column;
-z-index:9999;
+header{
+  background:#000;
+  color:#fff;
+  text-align:center;
+  padding:15px;
 }
 
-#splash img{
-width:150px;
-animation:zoom 1.5s ease;
-}
-
-@keyframes zoom{
-0%{transform:scale(0.5);opacity:0}
-100%{transform:scale(1);opacity:1}
+header img{
+  width:80px;
 }
 
 .container{
-max-width:500px;
-margin:auto;
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow:0 0 10px rgba(0,0,0,0.2);
-margin-top:20px;
+  padding:15px;
 }
 
-.logo{
-text-align:center;
+.card{
+  background:white;
+  padding:15px;
+  border-radius:10px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.2);
+  margin-bottom:15px;
 }
 
-.logo img{
-width:120px;
-}
-
-h2{
-text-align:center;
-}
-
-input,textarea,select{
-width:100%;
-padding:10px;
-margin:8px 0;
-border-radius:6px;
-border:1px solid #ccc;
-font-size:16px;
+input, select, button{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  font-size:16px;
 }
 
 button{
-width:100%;
-padding:12px;
-margin-top:10px;
-border:none;
-border-radius:6px;
-font-size:16px;
-cursor:pointer;
+  background:#000;
+  color:white;
+  font-weight:bold;
+  border:none;
 }
 
-.whatsapp{
-background:#25D366;
-color:white;
+#preco{
+  font-size:20px;
+  margin-top:10px;
+  font-weight:bold;
+  text-align:center;
 }
 
-.gps{
-background:#007bff;
-color:white;
+#map{
+  height:300px;
+  border-radius:10px;
 }
 
-.instalar{
-position:fixed;
-top:10px;
-right:10px;
-width:auto;
-padding:8px 12px;
-font-size:13px;
-background:#ff9800;
-color:white;
-border-radius:6px;
-display:none;
+footer{
+  text-align:center;
+  padding:10px;
+  font-size:14px;
+  color:#555;
 }
-
-.urgente{
-font-size:14px;
-margin-top:10px;
-}
-
-.footer{
-text-align:center;
-margin-top:15px;
-font-size:14px;
-color:#555;
-}
-
 </style>
-
 </head>
 
 <body>
 
-<!-- tela splash -->
-<div id="splash">
-<img src="logo.png">
-</div>
-
-<button class="instalar" id="btnInstall">📲 Baixar App</button>
+<header>
+  <img src="logo.png">
+  <h2>Master Express</h2>
+</header>
 
 <div class="container">
 
-<div class="logo">
-<img src="logo.png">
-</div>
+  <div class="card">
+    <h3>Endereço de coleta</h3>
+    <input id="coleta" placeholder="Digite o endereço de coleta">
+    <button onclick="usarLocalizacao()">📍 Usar minha localização</button>
+  </div>
 
-<h2>Master Express</h2>
-<p style="text-align:center;">Entrega rápida no mesmo dia</p>
+  <div class="card">
+    <h3>Endereço de entrega</h3>
+    <input id="entrega" placeholder="Digite o endereço de entrega">
+    <button onclick="marcarEntrega()">📍 Marcar no mapa</button>
+  </div>
 
-<input type="text" id="nome" placeholder="Seu nome">
+  <div class="card">
+    <div id="map"></div>
+  </div>
 
-<input type="text" id="telefone" placeholder="Telefone para contato">
-
-<input type="text" id="origem" placeholder="Endereço de coleta">
-
-<button class="gps" onclick="pegarLocalizacao()">📍 Usar minha localização</button>
-
-<input type="text" id="destino" placeholder="Endereço de entrega">
-
-<input type="text" id="recebedor" placeholder="Nome de quem vai receber">
-
-<input type="text" id="telrecebedor" placeholder="Telefone do recebedor">
-
-<select id="pagamento">
-<option value="">Forma de pagamento</option>
-<option>Dinheiro</option>
-<option>Pix</option>
-<option>Cartão</option>
-</select>
-
-<textarea id="detalhes" placeholder="Detalhes do pedido (opcional)"></textarea>
-
-<div class="urgente">
-<input type="checkbox" id="urgente">
-Pedido urgente ⚠️ (marque somente se for realmente urgente)
-</div>
-
-<button class="whatsapp" onclick="enviarPedido()">🚀 Solicitar Entrega</button>
-
-<div class="footer">
-Após enviar, o motoboy informará o valor e disponibilidade pelo WhatsApp.
-</div>
+  <div class="card">
+    <select id="pagamento">
+      <option>Dinheiro</option>
+      <option>Pix</option>
+      <option>Cartão</option>
+    </select>
+    <div id="preco">Valor da entrega: R$0</div>
+    <button onclick="enviarPedido()">Enviar pedido</button>
+  </div>
 
 </div>
+
+<footer>
+  Master Express • Entrega rápida em Macaé
+</footer>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
 <script>
+var map = L.map('map').setView([-22.376, -41.784], 13);
 
-/* remover splash */
-setTimeout(()=>{
-document.getElementById("splash").style.display="none"
-},2000)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19
+}).addTo(map);
 
-/* enviar pedido */
+var markerColeta, markerEntrega;
 
+// Usar localização do cliente para coleta
+function usarLocalizacao(){
+  navigator.geolocation.getCurrentPosition(function(pos){
+    let lat = pos.coords.latitude;
+    let lon = pos.coords.longitude;
+    document.getElementById("coleta").value = `${lat},${lon}`;
+
+    if(markerColeta) map.removeLayer(markerColeta);
+
+    markerColeta = L.marker([lat,lon]).addTo(map)
+      .bindPopup("Coleta").openPopup();
+
+    map.setView([lat,lon],15);
+
+    calcularPreco();
+  });
+}
+
+// Marcar endereço de entrega no mapa
+function marcarEntrega(){
+  let endereco = document.getElementById("entrega").value;
+  if(!endereco) return alert("Digite o endereço de entrega");
+
+  fetch("https://nominatim.openstreetmap.org/search?format=json&q="+endereco)
+  .then(res => res.json())
+  .then(data => {
+    let lat = parseFloat(data[0].lat);
+    let lon = parseFloat(data[0].lon);
+
+    if(markerEntrega) map.removeLayer(markerEntrega);
+
+    markerEntrega = L.marker([lat,lon]).addTo(map)
+      .bindPopup("Entrega").openPopup();
+
+    map.setView([lat,lon],15);
+
+    calcularPreco();
+  });
+}
+
+// Calcular valor da entrega
+function calcularPreco(){
+  if(!markerColeta || !markerEntrega) return;
+
+  let from = turf.point([markerColeta.getLatLng().lng, markerColeta.getLatLng().lat]);
+  let to = turf.point([markerEntrega.getLatLng().lng, markerEntrega.getLatLng().lat]);
+
+  let distance = turf.distance(from, to, {units:'kilometers'});
+
+  let preco = 10;
+  if(distance > 3){
+    preco = 10 + ((distance - 3) * 1.5);
+  }
+  preco = preco.toFixed(2);
+
+  document.getElementById("preco").innerText = "Valor da entrega: R$"+preco;
+}
+
+// Enviar pedido para WhatsApp
 function enviarPedido(){
+  if(!markerColeta || !markerEntrega) return alert("Marque coleta e entrega no mapa");
 
-let nome=document.getElementById("nome").value
-let telefone=document.getElementById("telefone").value
-let origem=document.getElementById("origem").value
-let destino=document.getElementById("destino").value
-let recebedor=document.getElementById("recebedor").value
-let telrecebedor=document.getElementById("telrecebedor").value
-let pagamento=document.getElementById("pagamento").value
-let detalhes=document.getElementById("detalhes").value
-let urgente=document.getElementById("urgente").checked ? "SIM ⚠️":"Não"
+  let preco = document.getElementById("preco").innerText;
+  let pagamento = document.getElementById("pagamento").value;
+  let coleta = document.getElementById("coleta").value;
+  let entrega = document.getElementById("entrega").value;
 
-let mensagem=
+  let mensagem =
+`🚀 *NOVO PEDIDO MASTER EXPRESS*
 
-`🚀 *NOVO PEDIDO - MASTER EXPRESS*
+📍 Coleta: ${coleta}
+📦 Entrega: ${entrega}
+💰 ${preco}
+💳 Pagamento: ${pagamento}
 
-👤 Cliente: ${nome}
-📞 Telefone: ${telefone}
+O motoboy entrará em contato via WhatsApp para informar o valor final e disponibilidade.`;
 
-📍 Coleta: ${origem}
-
-📦 Entrega: ${destino}
-
-🙋 Recebedor: ${recebedor}
-📞 Tel Recebedor: ${telrecebedor}
-
-💰 Pagamento: ${pagamento}
-
-⚠️ Urgente: ${urgente}
-
-📝 Detalhes: ${detalhes}
-
-O cliente aguarda retorno com valor e disponibilidade da entrega.`
-
-let url="https://wa.me/5522992150249?text="+encodeURIComponent(mensagem)
-
-window.open(url)
-
+  window.open("https://wa.me/5522992150249?text="+encodeURIComponent(mensagem));
 }
-
-/* gps */
-
-function pegarLocalizacao(){
-
-navigator.geolocation.getCurrentPosition(function(pos){
-
-let lat=pos.coords.latitude
-let lon=pos.coords.longitude
-
-document.getElementById("origem").value=
-`https://maps.google.com/?q=${lat},${lon}`
-
-})
-
-}
-
-/* instalar app */
-
-let deferredPrompt
-
-window.addEventListener('beforeinstallprompt',(e)=>{
-
-e.preventDefault()
-
-deferredPrompt=e
-
-document.getElementById("btnInstall").style.display="block"
-
-})
-
-document.getElementById("btnInstall").addEventListener("click",async()=>{
-
-if(deferredPrompt){
-
-deferredPrompt.prompt()
-
-deferredPrompt=null
-
-}
-
-})
-
-/* service worker */
-
-if("serviceWorker" in navigator){
-
-navigator.serviceWorker.register("sw.js")
-
-}
-
 </script>
 
 </body>
