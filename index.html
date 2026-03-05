@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,118 +7,148 @@
 <title>Master Express</title>
 
 <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#25D366">
+<link rel="apple-touch-icon" href="logo.png">
 
 <style>
-body{
-font-family:Arial;
-background:#111;
-color:white;
-text-align:center;
-padding:20px;
+body {
+  font-family: Arial, sans-serif;
+  background:#f2f2f2;
+  margin:0;
+  padding:0;
 }
-
-.logo{
-width:120px;
-margin-bottom:20px;
+.container {
+  max-width:500px;
+  margin:auto;
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 0 10px rgba(0,0,0,0.2);
+  margin-top:20px;
 }
-
-input, textarea{
-width:90%;
-padding:10px;
-margin:5px;
-border-radius:8px;
-border:none;
+.logo {
+  text-align:center;
 }
-
-button{
-padding:15px;
-border:none;
-border-radius:10px;
-margin:10px;
-font-size:16px;
+.logo img {
+  width:120px;
 }
-
-.whatsapp{
-background:#25D366;
-color:white;
-width:90%;
+h2 {
+  text-align:center;
+  margin-bottom:10px;
 }
-
-.instalar{
-background:#007BFF;
-color:white;
-width:90%;
+input, textarea {
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:6px;
+  border:1px solid #ccc;
+  font-size:16px;
+}
+button {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:6px;
+  font-size:16px;
+  cursor:pointer;
+}
+.whatsapp {
+  background:#25D366;
+  color:white;
+}
+.gps {
+  background:#007bff;
+  color:white;
+}
+.instalar {
+  background:#ff9800;
+  color:white;
+  font-size:14px;
+  margin-bottom:10px;
+}
+.footer {
+  text-align:center;
+  margin-top:15px;
+  font-size:14px;
+  color:#555;
 }
 </style>
 </head>
-
 <body>
 
-<img src="logo.png" class="logo">
+<div class="container">
+
+<!-- Botão Baixar App pequeno no topo -->
+<button class="instalar" id="btnInstall" style="display:none;">📲 Baixar App</button>
+
+<div class="logo">
+  <img src="logo.png">
+</div>
 
 <h2>Master Express</h2>
 <p>Entrega rápida no mesmo dia</p>
 
-<input id="nome" placeholder="Seu nome" required>
-<input id="telefone" placeholder="Seu telefone">
+<input type="text" id="nome" placeholder="Seu nome" required>
+<input type="text" id="telefone" placeholder="Telefone">
+<input type="text" id="origem" placeholder="Endereço de coleta">
+<button class="gps" onclick="pegarLocalizacao()">📍 Usar minha localização</button>
+<input type="text" id="destino" placeholder="Endereço de entrega">
+<textarea id="detalhes" placeholder="Detalhes do pedido (opcional)"></textarea>
+<button class="whatsapp" onclick="enviarPedido()">🚀 Solicitar Entrega</button>
 
-<input id="retirada" placeholder="Endereço de retirada">
-
-<input id="entrega" placeholder="Endereço de entrega">
-
-<textarea id="pedido" placeholder="Descreva o pedido"></textarea>
-
-<button class="whatsapp" onclick="enviarPedido()">
-Enviar pedido no WhatsApp
-</button>
-
-<button class="instalar" id="instalarApp">
-Baixar App
-</button>
+<div class="footer">Entrega rápida em Macaé</div>
+</div>
 
 <script>
-
 function enviarPedido(){
+  let nome = document.getElementById("nome").value
+  let telefone = document.getElementById("telefone").value
+  let origem = document.getElementById("origem").value
+  let destino = document.getElementById("destino").value
+  let detalhes = document.getElementById("detalhes").value
 
-let nome = document.getElementById("nome").value
-let telefone = document.getElementById("telefone").value
-let retirada = document.getElementById("retirada").value
-let entrega = document.getElementById("entrega").value
-let pedido = document.getElementById("pedido").value
+  let mensagem =
+`🚀 *NOVO PEDIDO MASTER EXPRESS*
 
-let mensagem =
-`Novo pedido Master Express
+👤 Nome: ${nome}
+📞 Telefone: ${telefone}
 
-Nome: ${nome}
-Telefone: ${telefone}
+📍 Coleta: ${origem}
+📦 Entrega: ${destino}
 
-Retirada: ${retirada}
+📝 Detalhes: ${detalhes}`
 
-Entrega: ${entrega}
-
-Pedido:
-${pedido}`
-
-let url = "https://wa.me/5522992150249?text=" + encodeURIComponent(mensagem)
-
-window.open(url)
+  let url = "https://wa.me/5522992150249?text=" + encodeURIComponent(mensagem)
+  window.open(url)
 }
 
-let deferredPrompt;
-
-window.addEventListener('beforeinstallprompt', (e)=>{
-e.preventDefault();
-deferredPrompt = e;
-
-document.getElementById("instalarApp").onclick = ()=>{
-deferredPrompt.prompt();
-}
-});
-
-if('serviceWorker' in navigator){
-navigator.serviceWorker.register('sw.js')
+function pegarLocalizacao(){
+  navigator.geolocation.getCurrentPosition(function(pos){
+    let lat = pos.coords.latitude
+    let lon = pos.coords.longitude
+    document.getElementById("origem").value = `https://maps.google.com/?q=${lat},${lon}`
+  })
 }
 
+// PWA - botão instalar
+let deferredPrompt
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  deferredPrompt = e
+  document.getElementById("btnInstall").style.display = "block"
+})
+document.getElementById("btnInstall").addEventListener("click", async () => {
+  if(deferredPrompt){
+    deferredPrompt.prompt()
+    deferredPrompt = null
+  }
+})
+
+// Registrar service worker
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js")
+}
 </script>
 
 </body>
