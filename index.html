@@ -28,7 +28,7 @@ footer{text-align:center;padding:10px;font-size:14px;color:#555;}
 <body>
 
 <header>
-<img src="logo.png">
+<img src="logo.png" alt="Logo Master Express">
 <button id="btnInstall" style="display:none;">📲 Baixar App</button>
 <h2>Master Express</h2>
 </header>
@@ -40,7 +40,7 @@ footer{text-align:center;padding:10px;font-size:14px;color:#555;}
 <h3>Remetente</h3>
 <input id="nomeRemetente" placeholder="Nome" required>
 <input id="telRemetente" placeholder="Telefone" required>
-<input id="endRemetente" placeholder="Endereço (opcional)">
+<input id="endRemetente" placeholder="Endereço (ou use GPS)">
 <button onclick="usarLocalizacao()">📍 Usar minha localização</button>
 </div>
 
@@ -89,9 +89,17 @@ footer{text-align:center;padding:10px;font-size:14px;color:#555;}
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
 <script>
+// Inicialização do mapa
 var map = L.map('map').setView([-22.376,-41.784],13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 var markerColeta, markerEntrega;
+
+// Salvar dados no localStorage
+window.addEventListener("load",()=>{
+  if(localStorage.nomeRemetente) document.getElementById("nomeRemetente").value=localStorage.nomeRemetente;
+  if(localStorage.telRemetente) document.getElementById("telRemetente").value=localStorage.telRemetente;
+  if(localStorage.endRemetente) document.getElementById("endRemetente").value=localStorage.endRemetente;
+});
 
 // Usar localização do remetente
 function usarLocalizacao(){
@@ -99,14 +107,15 @@ function usarLocalizacao(){
     let lat = pos.coords.latitude;
     let lon = pos.coords.longitude;
     if(markerColeta) map.removeLayer(markerColeta);
-    markerColeta = L.marker([lat,lon]).addTo(map).bindPopup("Coleta").openPopup();
+    markerColeta = L.marker([lat,lon],{draggable:true}).addTo(map).bindPopup("Coleta").openPopup();
     map.setView([lat,lon],15);
     document.getElementById("endRemetente").value = `https://maps.google.com/?q=${lat},${lon}`;
+    localStorage.endRemetente=document.getElementById("endRemetente").value;
     calcularPreco();
   });
 }
 
-// Obter endereço completo da entrega
+// Obter endereço de entrega completo
 function getEnderecoEntrega(){
   return document.getElementById("entregaRua").value + ", " +
          document.getElementById("entregaNum").value + ", " +
@@ -125,7 +134,7 @@ function marcarEntrega(){
     let lat = parseFloat(data[0].lat);
     let lon = parseFloat(data[0].lon);
     if(markerEntrega) map.removeLayer(markerEntrega);
-    markerEntrega = L.marker([lat,lon]).addTo(map).bindPopup("Entrega").openPopup();
+    markerEntrega = L.marker([lat,lon],{draggable:true}).addTo(map).bindPopup("Entrega").openPopup();
     map.setView([lat,lon],15);
     calcularPreco();
   });
@@ -134,12 +143,12 @@ function marcarEntrega(){
 // Calcular preço
 function calcularPreco(){
   if(!markerColeta||!markerEntrega) return;
-  let from = turf.point([markerColeta.getLatLng().lng, markerColeta.getLatLng().lat]);
-  let to = turf.point([markerEntrega.getLatLng().lng, markerEntrega.getLatLng().lat]);
-  let distance = turf.distance(from,to,{units:'kilometers'});
-  let preco = 10;
-  if(distance>3) preco = 10 + ((distance-3)*1.5);
-  preco = preco.toFixed(2);
+  let from=turf.point([markerColeta.getLatLng().lng,markerColeta.getLatLng().lat]);
+  let to=turf.point([markerEntrega.getLatLng().lng,markerEntrega.getLatLng().lat]);
+  let distance=turf.distance(from,to,{units:'kilometers'});
+  let preco=10;
+  if(distance>3) preco=10+((distance-3)*1.5);
+  preco=preco.toFixed(2);
   document.getElementById("preco").innerText="Valor da entrega: R$"+preco;
 }
 
@@ -156,11 +165,18 @@ function enviarPedido(){
   let pagamento=document.getElementById("pagamento").value;
   let entrega=getEnderecoEntrega();
   let urgente=document.getElementById("urgente").checked?"Sim":"Não";
-  let msg = `🚀 *NOVO PEDIDO MASTER EXPRESS*\n
+
+  // Salvar dados do remetente
+  localStorage.nomeRemetente=nomeR;
+  localStorage.telRemetente=telR;
+  localStorage.endRemetente=endR;
+
+  let msg=`🚀 *NOVO PEDIDO MASTER EXPRESS*\n
 👤 Remetente: ${nomeR}\n📞 Telefone: ${telR}\n📍 Local remetente: ${endR}\n
 📦 Entrega: ${entrega}\n👥 Recebedor: ${nomeRec}\n📞 Telefone: ${telRec}\n
 💰 ${preco}\n💳 Pagamento: ${pagamento}\n⚠ Urgente: ${urgente}\n📝 Observações: ${observacoes}\n
 O motoboy entrará em contato via WhatsApp para informar valor final e disponibilidade.`;
+
   window.open("https://wa.me/5522992150249?text="+encodeURIComponent(msg));
 }
 
