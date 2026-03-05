@@ -12,7 +12,7 @@
 
 <style>
 body{font-family:Arial,sans-serif;margin:0;background:#f2f2f2;}
-header{background:#333;color:#fff;text-align:center;padding:15px;position:relative;} /* cabeçalho cinza escuro */
+header{background:#333;color:#fff;text-align:center;padding:15px;position:relative;}
 header img{width:80px;}
 #btnInstall{position:absolute;top:10px;right:10px;background:#ff9800;color:white;border:none;border-radius:6px;padding:6px 10px;font-size:14px;cursor:pointer;}
 .container{padding:15px;}
@@ -40,7 +40,7 @@ footer{text-align:center;padding:10px;font-size:14px;color:#555;}
 <h3>Remetente</h3>
 <input id="nomeRemetente" placeholder="Nome" required>
 <input id="telRemetente" placeholder="Telefone" required>
-<input id="endRemetente" placeholder="Endereço (ou use GPS)">
+<input id="endRemetente" placeholder="Endereço ou use GPS">
 <button onclick="usarLocalizacao()">📍 Usar minha localização</button>
 </div>
 
@@ -58,10 +58,7 @@ footer{text-align:center;padding:10px;font-size:14px;color:#555;}
 <!-- Endereço de entrega -->
 <div class="card">
 <h3>Endereço de entrega</h3>
-<input id="entregaRua" placeholder="Rua" required>
-<input id="entregaNum" placeholder="Número" required>
-<input id="entregaBairro" placeholder="Bairro" required>
-<input id="entregaCidade" placeholder="Cidade" required>
+<input id="endEntrega" placeholder="Digite o endereço completo" required>
 <button onclick="marcarEntrega()">📍 Marcar no mapa</button>
 </div>
 
@@ -94,13 +91,6 @@ var map = L.map('map').setView([-22.376,-41.784],13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 var markerColeta, markerEntrega;
 
-// Salvar dados no localStorage
-window.addEventListener("load",()=>{
-  if(localStorage.nomeRemetente) document.getElementById("nomeRemetente").value=localStorage.nomeRemetente;
-  if(localStorage.telRemetente) document.getElementById("telRemetente").value=localStorage.telRemetente;
-  if(localStorage.endRemetente) document.getElementById("endRemetente").value=localStorage.endRemetente;
-});
-
 // Usar localização do remetente
 function usarLocalizacao(){
   navigator.geolocation.getCurrentPosition(function(pos){
@@ -110,23 +100,14 @@ function usarLocalizacao(){
     markerColeta = L.marker([lat,lon],{draggable:true}).addTo(map).bindPopup("Coleta").openPopup();
     map.setView([lat,lon],15);
     document.getElementById("endRemetente").value = `https://maps.google.com/?q=${lat},${lon}`;
-    localStorage.endRemetente=document.getElementById("endRemetente").value;
     calcularPreco();
   });
 }
 
-// Obter endereço de entrega completo
-function getEnderecoEntrega(){
-  return document.getElementById("entregaRua").value + ", " +
-         document.getElementById("entregaNum").value + ", " +
-         document.getElementById("entregaBairro").value + ", " +
-         document.getElementById("entregaCidade").value;
-}
-
 // Marcar entrega no mapa
 function marcarEntrega(){
-  let endereco = getEnderecoEntrega();
-  if(!endereco) return alert("Digite o endereço de entrega completo");
+  let endereco = document.getElementById("endEntrega").value;
+  if(!endereco) return alert("Digite o endereço completo de entrega");
   fetch("https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(endereco))
   .then(res=>res.json())
   .then(data=>{
@@ -140,16 +121,19 @@ function marcarEntrega(){
   });
 }
 
-// Calcular preço
+// Calcular preço com urgência
 function calcularPreco(){
   if(!markerColeta||!markerEntrega) return;
-  let from=turf.point([markerColeta.getLatLng().lng,markerColeta.getLatLng().lat]);
-  let to=turf.point([markerEntrega.getLatLng().lng,markerEntrega.getLatLng().lat]);
-  let distance=turf.distance(from,to,{units:'kilometers'});
-  let preco=10;
-  if(distance>3) preco=10+((distance-3)*1.5);
-  preco=preco.toFixed(2);
-  document.getElementById("preco").innerText="Valor da entrega: R$"+preco;
+  let from = turf.point([markerColeta.getLatLng().lng,markerColeta.getLatLng().lat]);
+  let to = turf.point([markerEntrega.getLatLng().lng,markerEntrega.getLatLng().lat]);
+  let distance = turf.distance(from,to,{units:'kilometers'});
+
+  let preco = 10; // base até 3 km
+  let adicional = document.getElementById("urgente").checked ? 1.7 : 1.5;
+
+  if(distance > 3) preco = 10 + ((distance - 3) * adicional);
+  preco = preco.toFixed(2);
+  document.getElementById("preco").innerText = "Valor da entrega: R$" + preco;
 }
 
 // Enviar pedido
@@ -163,12 +147,8 @@ function enviarPedido(){
   let observacoes=document.getElementById("observacoes").value||"Não informado";
   let preco=document.getElementById("preco").innerText;
   let pagamento=document.getElementById("pagamento").value;
-  let entrega=getEnderecoEntrega();
+  let entrega=document.getElementById("endEntrega").value;
   let urgente=document.getElementById("urgente").checked?"Sim":"Não";
-
-  localStorage.nomeRemetente=nomeR;
-  localStorage.telRemetente=telR;
-  localStorage.endRemetente=endR;
 
   let msg=`🚀 *NOVO PEDIDO MASTER EXPRESS*\n
 👤 Remetente: ${nomeR}\n📞 Telefone: ${telR}\n📍 Local remetente: ${endR}\n
