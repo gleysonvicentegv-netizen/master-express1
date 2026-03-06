@@ -5,178 +5,161 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Master Express</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#25D366">
+<meta name="theme-color" content="#333333">
 <link rel="apple-touch-icon" href="logo.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
-body{margin:0;font-family:Arial,sans-serif;background:#333;color:#fff;}
-header{background:#444;text-align:center;padding:15px;position:relative;}
-header img{width:80px;}
-#btnInstall{position:absolute;top:10px;right:10px;background:#ff9800;color:white;border:none;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;}
-.container{padding:15px;max-width:500px;margin:auto;}
-.card{background:#fff;color:#000;padding:12px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.2);margin-bottom:12px;}
-.card h3{margin-top:0;font-size:16px;}
-input, select, textarea{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px solid #ccc;font-size:14px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.1);}
-button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font-size:14px;font-weight:bold;cursor:pointer;transition:transform 0.2s;}
-button:hover{transform:scale(1.02);}
-.whatsapp{background:#25D366;color:white;}
-.gps{background:#007bff;color:white;}
-#preco{font-size:16px;margin-top:8px;font-weight:bold;text-align:center;}
-#map{height:250px;border-radius:8px;margin-top:8px;}
-.urgente-label{font-size:13px;margin-top:6px;display:block;}
-footer{text-align:center;padding:10px;font-size:13px;color:#bbb;margin-bottom:20px;}
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f2f2f2; }
+.container { max-width:500px; margin:20px auto; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.2); position:relative;}
+.logo { text-align:center; margin-bottom:10px; }
+.logo img { width:120px; }
+h2 { text-align:center; margin-bottom:15px; }
+input, textarea, select { width:100%; padding:10px; margin:6px 0; border-radius:8px; border:1px solid #ccc; font-size:16px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+button { width:100%; padding:12px; margin-top:10px; border:none; border-radius:8px; font-size:16px; cursor:pointer; box-shadow:0 4px 8px rgba(0,0,0,0.1); transition:0.2s; }
+button:hover { transform:scale(1.02); }
+.whatsapp { background:#25D366; color:white; }
+.gps { background:#007bff; color:white; }
+.instalar { position:absolute; top:10px; right:10px; background:#ff9800; color:white; font-size:14px; padding:5px 10px; border-radius:6px; display:none; }
+#map { height:250px; border-radius:8px; margin:10px 0; }
+.footer { text-align:center; font-size:14px; color:#555; margin-top:10px; }
+.urgente-label { font-size:14px; margin-top:5px; display:block; }
 </style>
 </head>
 <body>
 
-<header>
-<img src="logo.png" alt="Logo Master Express">
-<button id="btnInstall" style="display:none;">📲 Baixar App</button>
-<h2>Master Express</h2>
-</header>
-
 <div class="container">
 
-<!-- Remetente -->
-<div class="card">
-<h3>Remetente</h3>
-<input id="nomeRemetente" placeholder="Nome">
-<input id="telRemetente" placeholder="Telefone">
-<input id="endRemetente" placeholder="Endereço ou use GPS">
+<!-- Botão PWA -->
+<button class="instalar" id="btnInstall">📲 Baixar App</button>
+
+<div class="logo"><img src="logo.png" alt="Master Express"></div>
+
+<h2>Master Express</h2>
+<p>Entrega rápida no mesmo dia em Macaé</p>
+
+<input type="text" id="nomeRemetente" placeholder="Seu nome" required>
+<input type="text" id="telRemetente" placeholder="Telefone">
+<input type="text" id="endRemetente" placeholder="Endereço de coleta">
 <button class="gps" onclick="usarLocalizacao()">📍 Usar minha localização</button>
-</div>
 
-<!-- Recebedor e Urgente -->
-<div class="card">
-<h3>Recebedor</h3>
-<input id="nomeRecebedor" placeholder="Nome">
-<input id="telRecebedor" placeholder="Telefone">
-<label class="urgente-label"><input type="checkbox" id="urgente"> Marque apenas se a entrega for realmente urgente</label>
-<textarea id="observacoes" placeholder="Observações (opcional)"></textarea>
-</div>
-
-<!-- Endereço de entrega -->
-<div class="card">
-<h3>Endereço de entrega</h3>
-<input id="endEntrega" placeholder="Digite o endereço completo">
-<button class="gps" onclick="marcarEntrega()">📍 Marcar no mapa</button>
-</div>
-
-<!-- Mapa -->
-<div class="card">
-<div id="map"></div>
-</div>
-
-<!-- Pagamento e envio -->
-<div class="card">
+<input type="text" id="endEntrega" placeholder="Endereço de entrega">
 <select id="pagamento">
-<option>Dinheiro</option>
-<option>Pix</option>
-<option>Cartão</option>
+  <option value="">Forma de pagamento</option>
+  <option>Pix</option>
+  <option>Dinheiro</option>
+  <option>Cartão</option>
+  <option>Empresa (Faturado)</option>
 </select>
-<div id="preco">Valor da entrega: R$0</div>
-<button class="whatsapp" onclick="enviarPedido()">🚀 Enviar pedido</button>
-</div>
 
-</div>
+<input type="text" id="nomeRecebedor" placeholder="Nome do recebedor">
+<input type="text" id="telRecebedor" placeholder="Telefone do recebedor">
 
-<footer>Master Express • Entrega rápida em Macaé</footer>
+<textarea id="observacoes" placeholder="Observações (opcional)"></textarea>
+
+<label class="urgente-label">
+  <input type="checkbox" id="urgente"> Marcar como URGENTE (só se realmente necessário)
+</label>
+
+<div id="preco" style="margin-top:10px; font-weight:bold;">Valor da entrega: R$0,00</div>
+
+<button class="whatsapp" onclick="enviarPedido()">🚀 Solicitar Entrega</button>
+
+<div id="map"></div>
+<div class="footer">Entrega rápida em Macaé</div>
+</div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-
 <script>
-// Inicialização do mapa
-var map = L.map('map').setView([-22.376,-41.784],13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-var markerColeta, markerEntrega;
+let map = L.map('map').setView([-22.376, -41.784], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
 
-// Usar localização do remetente
-function usarLocalizacao(){
-  navigator.geolocation.getCurrentPosition(function(pos){
+let markerColeta, markerEntrega;
+
+function usarLocalizacao() {
+  navigator.geolocation.getCurrentPosition(pos=>{
     let lat=pos.coords.latitude, lon=pos.coords.longitude;
     if(markerColeta) map.removeLayer(markerColeta);
-    markerColeta=L.marker([lat,lon],{draggable:true}).addTo(map).bindPopup("Coleta").openPopup();
+    markerColeta = L.marker([lat,lon], {draggable:true}).addTo(map).bindPopup("Coleta").openPopup();
     map.setView([lat,lon],15);
-    document.getElementById("endRemetente").value=`https://maps.google.com/?q=${lat},${lon}`;
+    document.getElementById("endRemetente").value = `https://maps.google.com/?q=${lat},${lon}`;
     calcularPreco();
   });
 }
 
-// Marcar entrega no mapa
-function marcarEntrega(){
-  let endereco=document.getElementById("endEntrega").value;
-  if(!endereco) return alert("Digite o endereço completo de entrega");
-  fetch("https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(endereco))
+function marcarEntrega() {
+  let endereco = document.getElementById("endEntrega").value;
+  if(!endereco) return alert("Digite o endereço de entrega");
+  let viewbox = "-41.9,-22.5,-41.6,-22.2";
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&viewbox=${viewbox}&bounded=1&limit=5`)
   .then(res=>res.json())
   .then(data=>{
-    if(!data[0]) return alert("Endereço de entrega não encontrado!");
+    if(!data[0]) return alert("Endereço de entrega não encontrado em Macaé!");
     let lat=parseFloat(data[0].lat), lon=parseFloat(data[0].lon);
     if(markerEntrega) map.removeLayer(markerEntrega);
-    markerEntrega=L.marker([lat,lon],{draggable:true}).addTo(map).bindPopup("Entrega").openPopup();
+    markerEntrega = L.marker([lat,lon], {draggable:true}).addTo(map).bindPopup("Entrega").openPopup();
     map.setView([lat,lon],15);
     calcularPreco();
   });
 }
 
-// Calcular preço com urgência
-function calcularPreco(){
-  if(!markerColeta||!markerEntrega) return;
-  let from=turf.point([markerColeta.getLatLng().lng,markerColeta.getLatLng().lat]);
-  let to=turf.point([markerEntrega.getLatLng().lng,markerEntrega.getLatLng().lat]);
-  let distance=turf.distance(from,to,{units:'kilometers'});
-  let preco=10;
-  let adicional=document.getElementById("urgente").checked?1.7:1.5;
-  if(distance>3) preco=10+((distance-3)*adicional);
-  preco=preco.toFixed(2);
-  document.getElementById("preco").innerText="Valor da entrega: R$"+preco;
+document.getElementById("endEntrega").addEventListener("change", marcarEntrega);
+
+function calcularPreco() {
+  if(!markerColeta || !markerEntrega) return;
+  let from = turf.point([markerColeta.getLatLng().lng, markerColeta.getLatLng().lat]);
+  let to = turf.point([markerEntrega.getLatLng().lng, markerEntrega.getLatLng().lat]);
+  let distance = turf.distance(from,to,{units:'kilometers'});
+  let preco = 10;
+  let adicional = document.getElementById("urgente").checked ? 1.7 : 1.5;
+  if(distance>3) preco = 10 + ((distance-3)*adicional);
+  preco = preco.toFixed(2);
+  document.getElementById("preco").innerText = "Valor da entrega: R$"+preco;
 }
 
-// Enviar pedido via WhatsApp
-function enviarPedido(){
-  if(!markerColeta||!markerEntrega) return alert("Marque coleta e entrega no mapa");
-  let nomeR=document.getElementById("nomeRemetente").value;
-  let telR=document.getElementById("telRemetente").value;
-  let endR=document.getElementById("endRemetente").value;
-  let nomeRec=document.getElementById("nomeRecebedor").value;
-  let telRec=document.getElementById("telRecebedor").value;
-  let obs=document.getElementById("observacoes").value||"Não informado";
-  let preco=document.getElementById("preco").innerText;
-  let pag=document.getElementById("pagamento").value;
-  let entrega=document.getElementById("endEntrega").value;
-  let urgente=document.getElementById("urgente").checked?"Sim":"Não";
-
-  let msg=`🚀 *NOVO PEDIDO MASTER EXPRESS*
+function enviarPedido() {
+  if(!markerColeta || !markerEntrega) return alert("Marque a coleta e entrega no mapa");
+  let nomeR = document.getElementById("nomeRemetente").value;
+  let telR = document.getElementById("telRemetente").value;
+  let endR = document.getElementById("endRemetente").value;
+  let nomeRec = document.getElementById("nomeRecebedor").value;
+  let telRec = document.getElementById("telRecebedor").value;
+  let obs = document.getElementById("observacoes").value || "Não informado";
+  let preco = document.getElementById("preco").innerText;
+  let pag = document.getElementById("pagamento").value;
+  let entrega = document.getElementById("endEntrega").value;
+  let urgente = document.getElementById("urgente").checked ? "Sim" : "Não";
+  let msg = `🚀 *NOVO PEDIDO MASTER EXPRESS*
 👤 Remetente: ${nomeR}
 📞 Telefone: ${telR}
 📍 Local remetente: ${endR}
 📦 Entrega: ${entrega}
 👥 Recebedor: ${nomeRec}
-📞 Telefone: ${telRec}
+📞 Telefone do recebedor: ${telRec}
 💰 ${preco}
 💳 Pagamento: ${pag}
 ⚠ Urgente: ${urgente}
 📝 Observações: ${obs}
 
 O motoboy entrará em contato via WhatsApp para informar valor final e disponibilidade.`;
-
   window.open("https://wa.me/5522992150249?text="+encodeURIComponent(msg));
 }
 
-// PWA - botão instalar
+// PWA
 let deferredPrompt;
-window.addEventListener('beforeinstallprompt',e=>{
+window.addEventListener('beforeinstallprompt', e=>{
   e.preventDefault();
   deferredPrompt=e;
   document.getElementById("btnInstall").style.display="block";
 });
-document.getElementById("btnInstall").addEventListener("click", async()=>{
-  if(deferredPrompt){deferredPrompt.prompt(); deferredPrompt=null;}
+document.getElementById("btnInstall").addEventListener("click", async ()=>{
+  if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; }
 });
 
 // Registrar SW
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
 </script>
-
 </body>
 </html>
