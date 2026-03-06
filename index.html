@@ -1,202 +1,169 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Master Express</title>
-
 <link rel="manifest" href="manifest.json">
-
+<meta name="theme-color" content="#333333">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
-
-body{
-font-family:Arial, sans-serif;
-margin:0;
-background:#2c2c2c;
-color:white;
-text-align:center;
-}
-
-header{
-padding:20px;
-}
-
-.logo{
-width:120px;
-}
-
-.container{
-padding:20px;
-max-width:600px;
-margin:auto;
-}
-
-input,textarea{
-width:100%;
-padding:12px;
-margin-top:10px;
-border-radius:8px;
-border:none;
-font-size:16px;
-}
-
-button{
-margin-top:15px;
-padding:14px;
-width:100%;
-border:none;
-border-radius:8px;
-font-size:18px;
-background:#27ae60;
-color:white;
-cursor:pointer;
-}
-
-#map{
-height:300px;
-margin-top:20px;
-border-radius:10px;
-}
-
-.valor{
-font-size:22px;
-margin-top:15px;
-font-weight:bold;
-}
-
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f2f2f2; }
+.container { max-width:500px; margin:20px auto; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.2); position:relative;}
+.logo { text-align:center; margin-bottom:10px; }
+.logo img { width:120px; }
+h2 { text-align:center; margin-bottom:15px; }
+input, textarea, select { width:100%; padding:10px; margin:6px 0; border-radius:8px; border:1px solid #ccc; font-size:16px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+button { width:100%; padding:12px; margin-top:10px; border:none; border-radius:8px; font-size:16px; cursor:pointer; box-shadow:0 4px 8px rgba(0,0,0,0.1); transition:0.2s; }
+button:hover { transform:scale(1.02); }
+.whatsapp { background:#25D366; color:white; }
+.gps { background:#007bff; color:white; }
+.instalar { position:absolute; top:10px; right:10px; background:#ff9800; color:white; font-size:14px; padding:5px 10px; border-radius:6px; display:none; }
+#map { height:250px; border-radius:8px; margin:10px 0; }
+.footer { text-align:center; font-size:14px; color:#555; margin-top:10px; }
+.urgente-label { font-size:14px; margin-top:5px; display:block; }
 </style>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 </head>
-
 <body>
-
-<header>
-<img src="logo.png" class="logo">
-<h2>Master Express</h2>
-<p>Entrega rápida em Macaé</p>
-</header>
 
 <div class="container">
 
-<h3>Quem está enviando</h3>
+<!-- Botão PWA -->
+<button class="instalar" id="btnInstall">📲 Baixar App</button>
 
-<input id="nomeRemetente" placeholder="Seu nome">
+<div class="logo"><img src="logo.png" alt="Master Express"></div>
 
-<input id="telefoneRemetente" placeholder="Seu telefone">
+<h2>Master Express</h2>
+<p>Entrega rápida no mesmo dia em Macaé</p>
 
-<h3>Quem vai receber</h3>
+<input type="text" id="nomeRemetente" placeholder="Seu nome" required>
+<input type="text" id="telRemetente" placeholder="Telefone">
+<input type="text" id="endRemetente" placeholder="Endereço de coleta">
+<button class="gps" onclick="usarLocalizacao()">📍 Usar minha localização</button>
 
-<input id="nomeDestinatario" placeholder="Nome de quem recebe">
+<input type="text" id="endEntrega" placeholder="Endereço de entrega">
+<select id="pagamento">
+  <option value="">Forma de pagamento</option>
+  <option>Pix</option>
+  <option>Dinheiro</option>
+  <option>Cartão</option>
+  <option>Empresa (Faturado)</option>
+</select>
 
-<input id="telefoneDestinatario" placeholder="Telefone de quem recebe">
+<input type="text" id="nomeRecebedor" placeholder="Nome do recebedor">
+<input type="text" id="telRecebedor" placeholder="Telefone do recebedor">
 
-<input id="enderecoDestino" placeholder="Endereço de entrega">
+<textarea id="observacoes" placeholder="Observações (opcional)"></textarea>
 
-<textarea id="obs" placeholder="Observações (opcional)"></textarea>
+<label class="urgente-label">
+  <input type="checkbox" id="urgente"> Marcar como URGENTE (só se realmente necessário)
+</label>
+
+<div id="preco" style="margin-top:10px; font-weight:bold;">Valor da entrega: R$0,00</div>
+
+<button class="whatsapp" onclick="enviarPedido()">🚀 Solicitar Entrega</button>
 
 <div id="map"></div>
-
-<div class="valor">
-Valor estimado: <span id="valorEntrega">R$10,00</span>
+<div class="footer">Entrega rápida em Macaé</div>
 </div>
 
-<button onclick="enviarPedido()">Solicitar entrega</button>
-
-</div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 <script>
+let map = L.map('map').setView([-22.376, -41.784], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
 
-let mapa = L.map('map').setView([-22.3768,-41.7848],13)
+let markerColeta, markerEntrega;
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-maxZoom:19
-}).addTo(mapa)
-
-let marcadorColeta = L.marker([-22.3768,-41.7848],{draggable:true}).addTo(mapa)
-let marcadorEntrega = L.marker([-22.3800,-41.7900],{draggable:true}).addTo(mapa)
-
-function calcularDistancia(lat1,lon1,lat2,lon2){
-
-let R=6371
-
-let dLat=(lat2-lat1)*Math.PI/180
-let dLon=(lon2-lon1)*Math.PI/180
-
-let a=
-Math.sin(dLat/2)*Math.sin(dLat/2)+
-Math.cos(lat1*Math.PI/180)*
-Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)*Math.sin(dLon/2)
-
-let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-
-return R*c
+function usarLocalizacao() {
+  navigator.geolocation.getCurrentPosition(pos=>{
+    let lat=pos.coords.latitude, lon=pos.coords.longitude;
+    if(markerColeta) map.removeLayer(markerColeta);
+    markerColeta = L.marker([lat,lon], {draggable:true}).addTo(map).bindPopup("Coleta").openPopup();
+    map.setView([lat,lon],15);
+    document.getElementById("endRemetente").value = `https://maps.google.com/?q=${lat},${lon}`;
+    calcularPreco();
+    // Atualiza preço em tempo real enquanto arrasta
+    markerColeta.on("drag", calcularPreco);
+  });
 }
 
-function calcularValor(){
-
-let c = marcadorColeta.getLatLng()
-let e = marcadorEntrega.getLatLng()
-
-let distancia = calcularDistancia(c.lat,c.lng,e.lat,e.lng)
-
-let valor = 10
-
-if(distancia > 3){
-
-valor = 10 + ((distancia - 3) * 1.80)
-
+function marcarEntrega() {
+  let endereco = document.getElementById("endEntrega").value;
+  if(!endereco) return alert("Digite o endereço de entrega");
+  let viewbox = "-41.9,-22.5,-41.6,-22.2";
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&viewbox=${viewbox}&bounded=1&limit=5`)
+  .then(res=>res.json())
+  .then(data=>{
+    if(!data[0]) return alert("Endereço de entrega não encontrado em Macaé!");
+    let lat=parseFloat(data[0].lat), lon=parseFloat(data[0].lon);
+    if(markerEntrega) map.removeLayer(markerEntrega);
+    markerEntrega = L.marker([lat,lon], {draggable:true}).addTo(map).bindPopup("Entrega").openPopup();
+    map.setView([lat,lon],15);
+    calcularPreco();
+    // Atualiza preço em tempo real enquanto arrasta
+    markerEntrega.on("drag", calcularPreco);
+  });
 }
 
-document.getElementById("valorEntrega").innerText =
-"R$" + valor.toFixed(2)
+document.getElementById("endEntrega").addEventListener("change", marcarEntrega);
 
+function calcularPreco() {
+  if(!markerColeta || !markerEntrega) return;
+  let from = turf.point([markerColeta.getLatLng().lng, markerColeta.getLatLng().lat]);
+  let to = turf.point([markerEntrega.getLatLng().lng, markerEntrega.getLatLng().lat]);
+  let distance = turf.distance(from,to,{units:'kilometers'});
+  let preco = 10;
+  let adicional = document.getElementById("urgente").checked ? 1.7 : 1.80; // km adicional
+  if(distance>3) preco = 10 + ((distance-3)*adicional);
+  preco = preco.toFixed(2);
+  document.getElementById("preco").innerText = "Valor da entrega: R$"+preco;
 }
 
-marcadorColeta.on("dragend",calcularValor)
-marcadorEntrega.on("dragend",calcularValor)
+function enviarPedido() {
+  if(!markerColeta || !markerEntrega) return alert("Marque a coleta e entrega no mapa");
+  let nomeR = document.getElementById("nomeRemetente").value;
+  let telR = document.getElementById("telRemetente").value;
+  let endR = document.getElementById("endRemetente").value;
+  let nomeRec = document.getElementById("nomeRecebedor").value;
+  let telRec = document.getElementById("telRecebedor").value;
+  let obs = document.getElementById("observacoes").value || "Não informado";
+  let preco = document.getElementById("preco").innerText;
+  let pag = document.getElementById("pagamento").value;
+  let entrega = document.getElementById("endEntrega").value;
+  let urgente = document.getElementById("urgente").checked ? "Sim" : "Não";
+  let msg = `🚀 *NOVO PEDIDO MASTER EXPRESS*
+👤 Remetente: ${nomeR}
+📞 Telefone: ${telR}
+📍 Local remetente: ${endR}
+📦 Entrega: ${entrega}
+👥 Recebedor: ${nomeRec}
+📞 Telefone do recebedor: ${telRec}
+💰 ${preco}
+💳 Pagamento: ${pag}
+⚠ Urgente: ${urgente}
+📝 Observações: ${obs}
 
-calcularValor()
-
-function enviarPedido(){
-
-let nomeR = document.getElementById("nomeRemetente").value
-let telR = document.getElementById("telefoneRemetente").value
-
-let nomeD = document.getElementById("nomeDestinatario").value
-let telD = document.getElementById("telefoneDestinatario").value
-
-let obs = document.getElementById("obs").value
-
-let c = marcadorColeta.getLatLng()
-let e = marcadorEntrega.getLatLng()
-
-let valor = document.getElementById("valorEntrega").innerText
-
-let msg =
-"📦 NOVA ENTREGA\n\n"+
-"Remetente: "+nomeR+"\n"+
-"Telefone: "+telR+"\n\n"+
-"Destinatário: "+nomeD+"\n"+
-"Telefone: "+telD+"\n\n"+
-"Valor: "+valor+"\n\n"+
-"Observação: "+obs+"\n\n"+
-"Coleta:\nhttps://maps.google.com/?q="+c.lat+","+c.lng+
-"\n\nEntrega:\nhttps://maps.google.com/?q="+e.lat+","+e.lng
-
-let url =
-"https://wa.me/5522992150249?text="+
-encodeURIComponent(msg)
-
-window.open(url)
-
+O motoboy entrará em contato via WhatsApp para informar valor final e disponibilidade.`;
+  window.open("https://wa.me/5522992150249?text="+encodeURIComponent(msg));
 }
 
+// PWA
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  document.getElementById("btnInstall").style.display="block";
+});
+document.getElementById("btnInstall").addEventListener("click", async ()=>{
+  if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; }
+});
+
+// Registrar SW
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
 </script>
-
 </body>
 </html>
