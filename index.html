@@ -19,17 +19,18 @@ button { width:100%; padding:12px; margin-top:10px; border:none; border-radius:8
 button:hover { transform:scale(1.02); }
 .whatsapp { background:#25D366; color:white; }
 .gps { background:#007bff; color:white; }
+.addEntrega { background:#ff9800; color:white; }
 .instalar { position:absolute; top:10px; right:10px; background:#ff9800; color:white; font-size:14px; padding:5px 10px; border-radius:6px; display:none; }
 #map { height:250px; border-radius:8px; margin:10px 0; }
 .footer { text-align:center; font-size:14px; color:#555; margin-top:10px; }
 .urgente-label { font-size:14px; margin-top:5px; display:block; }
+.entrega-block { border:1px solid #ccc; padding:10px; border-radius:8px; margin-top:10px; background:#fafafa; }
 </style>
 </head>
 <body>
 
 <div class="container">
 
-<!-- Botão PWA -->
 <button class="instalar" id="btnInstall">📲 Baixar App</button>
 
 <div class="logo"><img src="logo.png" alt="Master Express"></div>
@@ -37,12 +38,23 @@ button:hover { transform:scale(1.02); }
 <h2>Master Express</h2>
 <p>Entrega rápida no mesmo dia em Macaé</p>
 
-<input type="text" id="nomeRemetente" placeholder="Seu nome" required>
-<input type="text" id="telRemetente" placeholder="Telefone">
-<input type="text" id="endRemetente" placeholder="Endereço de coleta">
+<input type="text" id="nomeRemetente" placeholder="Seu nome (Ex: João)" required>
+<input type="text" id="telRemetente" placeholder="Telefone (Ex: 22999999999)">
+<input type="text" id="endRemetente" placeholder="Endereço de coleta (Ex: Mercado Central)">
 <button class="gps" onclick="usarLocalizacao()">📍 Usar minha localização</button>
 
-<input type="text" id="endEntrega" placeholder="Endereço de entrega">
+<div id="entregas">
+  <!-- Entrega 1 -->
+  <div class="entrega-block" data-index="1">
+    <h3>Entrega 1</h3>
+    <input type="text" class="endEntrega" placeholder="Endereço de entrega">
+    <input type="text" class="nomeRecebedor" placeholder="Nome do recebedor">
+    <input type="text" class="telRecebedor" placeholder="Telefone do recebedor">
+  </div>
+</div>
+
+<button type="button" class="addEntrega" onclick="adicionarEntrega()">+ Adicionar outra entrega</button>
+
 <select id="pagamento">
   <option value="">Forma de pagamento</option>
   <option>Pix</option>
@@ -50,9 +62,6 @@ button:hover { transform:scale(1.02); }
   <option>Cartão</option>
   <option>Empresa (Faturado)</option>
 </select>
-
-<input type="text" id="nomeRecebedor" placeholder="Nome do recebedor">
-<input type="text" id="telRecebedor" placeholder="Telefone do recebedor">
 
 <textarea id="observacoes" placeholder="Observações (opcional)"></textarea>
 
@@ -70,11 +79,13 @@ button:hover { transform:scale(1.02); }
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
 <script>
 let map = L.map('map').setView([-22.376, -41.784], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
 
-let markerColeta, markerEntrega;
+let markerColeta;
+let markersEntrega = [];
 
 function usarLocalizacao() {
   navigator.geolocation.getCurrentPosition(pos=>{
@@ -84,69 +95,85 @@ function usarLocalizacao() {
     map.setView([lat,lon],15);
     document.getElementById("endRemetente").value = `https://maps.google.com/?q=${lat},${lon}`;
     calcularPreco();
-    // Atualiza preço em tempo real enquanto arrasta
     markerColeta.on("drag", calcularPreco);
   });
 }
 
-function marcarEntrega() {
-  let endereco = document.getElementById("endEntrega").value;
-  if(!endereco) return alert("Digite o endereço de entrega");
-  let viewbox = "-41.9,-22.5,-41.6,-22.2";
-  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&viewbox=${viewbox}&bounded=1&limit=5`)
-  .then(res=>res.json())
-  .then(data=>{
-    if(!data[0]) return alert("Endereço de entrega não encontrado em Macaé!");
-    let lat=parseFloat(data[0].lat), lon=parseFloat(data[0].lon);
-    if(markerEntrega) map.removeLayer(markerEntrega);
-    markerEntrega = L.marker([lat,lon], {draggable:true}).addTo(map).bindPopup("Entrega").openPopup();
-    map.setView([lat,lon],15);
+// Adiciona nova entrega
+function adicionarEntrega(){
+  let entregasDiv = document.getElementById("entregas");
+  let index = entregasDiv.children.length + 1;
+  let div = document.createElement("div");
+  div.className = "entrega-block";
+  div.setAttribute("data-index", index);
+  div.innerHTML = `<h3>Entrega ${index}</h3>
+    <input type="text" class="endEntrega" placeholder="Endereço de entrega">
+    <input type="text" class="nomeRecebedor" placeholder="Nome do recebedor">
+    <input type="text" class="telRecebedor" placeholder="Telefone do recebedor">`;
+  entregasDiv.appendChild(div);
+}
+
+// Sugestão de endereço usando OpenStreetMap
+async function sugerirEndereco(input){
+  let query = input.value;
+  if(query.length<3) return;
+  let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=-41.9,-22.5,-41.6,-22.2&bounded=1&limit=5`;
+  let res = await fetch(url);
+  let data = await res.json();
+  if(data.length>0){
+    input.value = data[0].display_name; // pega o primeiro resultado
     calcularPreco();
-    // Atualiza preço em tempo real enquanto arrasta
-    markerEntrega.on("drag", calcularPreco);
-  });
+  }
 }
 
-document.getElementById("endEntrega").addEventListener("change", marcarEntrega);
-
-function calcularPreco() {
-  if(!markerColeta || !markerEntrega) return;
+// Calcular preço total
+function calcularPreco(){
+  if(!markerColeta) return;
+  let precoTotal = 0;
+  let adicional = document.getElementById("urgente").checked ? 1.7 : 2.0;
   let from = turf.point([markerColeta.getLatLng().lng, markerColeta.getLatLng().lat]);
-  let to = turf.point([markerEntrega.getLatLng().lng, markerEntrega.getLatLng().lat]);
-  let distance = turf.distance(from,to,{units:'kilometers'});
-  let preco = 10;
-  let adicional = document.getElementById("urgente").checked ? 1.7 : 1.80; // km adicional
-  if(distance>3) preco = 10 + ((distance-3)*adicional);
-  preco = preco.toFixed(2);
-  document.getElementById("preco").innerText = "Valor da entrega: R$"+preco;
+  markersEntrega.forEach(marker=>{
+    let to = turf.point([marker.getLatLng().lng, marker.getLatLng().lat]);
+    let distancia = turf.distance(from,to,{units:'kilometers'});
+    let preco = 10;
+    if(distancia>3) preco += (distancia-3)*adicional;
+    precoTotal += preco;
+  });
+  document.getElementById("preco").innerText = "Valor da entrega: R$"+precoTotal.toFixed(2);
 }
 
-function enviarPedido() {
-  if(!markerColeta || !markerEntrega) return alert("Marque a coleta e entrega no mapa");
+// Enviar pedido via WhatsApp
+let pedidoNum = 100;
+function enviarPedido(){
+  if(!markerColeta || markersEntrega.length===0) return alert("Marque a coleta e pelo menos uma entrega no mapa");
   let nomeR = document.getElementById("nomeRemetente").value;
   let telR = document.getElementById("telRemetente").value;
   let endR = document.getElementById("endRemetente").value;
-  let nomeRec = document.getElementById("nomeRecebedor").value;
-  let telRec = document.getElementById("telRecebedor").value;
   let obs = document.getElementById("observacoes").value || "Não informado";
-  let preco = document.getElementById("preco").innerText;
   let pag = document.getElementById("pagamento").value;
-  let entrega = document.getElementById("endEntrega").value;
-  let urgente = document.getElementById("urgente").checked ? "Sim" : "Não";
-  let msg = `🚀 *NOVO PEDIDO MASTER EXPRESS*
-👤 Remetente: ${nomeR}
-📞 Telefone: ${telR}
-📍 Local remetente: ${endR}
-📦 Entrega: ${entrega}
-👥 Recebedor: ${nomeRec}
-📞 Telefone do recebedor: ${telRec}
-💰 ${preco}
-💳 Pagamento: ${pag}
-⚠ Urgente: ${urgente}
-📝 Observações: ${obs}
 
-O motoboy entrará em contato via WhatsApp para informar valor final e disponibilidade.`;
-  window.open("https://wa.me/5522992150249?text="+encodeURIComponent(msg));
+  let mensagem = `📦 NOVO PEDIDO #${pedidoNum}\n\nCliente: ${nomeR}\nTelefone: ${telR}\nColeta: ${endR}\n\n`;
+
+  markersEntrega.forEach((marker,i)=>{
+    let idx = i+1;
+    let entregaDiv = document.querySelector(`.entrega-block[data-index="${idx}"]`);
+    let end = entregaDiv.querySelector(".endEntrega").value;
+    let nomeRec = entregaDiv.querySelector(".nomeRecebedor").value;
+    let telRec = entregaDiv.querySelector(".telRecebedor").value;
+    mensagem += `📦 Entrega ${idx}\n${end}\nRecebedor: ${nomeRec}\nTel: ${telRec}\n\n`;
+  });
+
+  let rotas = markersEntrega.length;
+  let preco = document.getElementById("preco").innerText.split("R$")[1];
+  mensagem += `Rotas: ${rotas}\nValor total: R$${preco}\nObservações: ${obs}`;
+
+  window.open("https://wa.me/5522992150249?text="+encodeURIComponent(mensagem));
+  pedidoNum++;
+}
+
+// Registrar SW
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
 }
 
 // PWA
@@ -160,10 +187,26 @@ document.getElementById("btnInstall").addEventListener("click", async ()=>{
   if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; }
 });
 
-// Registrar SW
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js");
-}
+// Adicionar marcadores quando digitam endereço
+document.addEventListener("input", e=>{
+  if(e.target.classList.contains("endEntrega")){
+    sugerirEndereco(e.target);
+    let idx = parseInt(e.target.parentNode.getAttribute("data-index"))-1;
+    let endereco = e.target.value;
+    if(!endereco) return;
+    let viewbox = "-41.9,-22.5,-41.6,-22.2";
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&viewbox=${viewbox}&bounded=1&limit=5`)
+    .then(res=>res.json())
+    .then(data=>{
+      if(!data[0]) return;
+      let lat=parseFloat(data[0].lat), lon=parseFloat(data[0].lon);
+      if(markersEntrega[idx]) map.removeLayer(markersEntrega[idx]);
+      markersEntrega[idx] = L.marker([lat,lon], {draggable:true}).addTo(map).bindPopup(`Entrega ${idx+1}`).openPopup();
+      calcularPreco();
+      markersEntrega[idx].on("drag", calcularPreco);
+    });
+  }
+});
 </script>
 </body>
 </html>
