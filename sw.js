@@ -1,42 +1,43 @@
-const CACHE_NAME = 'master-express-v3';
+const CACHE_NAME = "master-express-v2"; // altere a versão sempre que atualizar
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/logo.png',
-  '/manifest.json',
-  'https://unpkg.com/leaflet/dist/leaflet.css',
-  'https://unpkg.com/leaflet/dist/leaflet.js',
-  'https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js'
+  "/",
+  "/index.html",
+  "/logo.png",
+  "/manifest.json",
+  "https://unpkg.com/leaflet/dist/leaflet.css",
+  "https://unpkg.com/leaflet/dist/leaflet.js",
+  "https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"
 ];
 
-// Instala o service worker e salva os arquivos no cache
-self.addEventListener('install', event => {
+// Instalação do Service Worker e cache dos arquivos
+self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-    .then(cache => cache.addAll(urlsToCache))
-    .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(urlsToCache);
+    })
   );
+  self.skipWaiting(); // força ativação imediata
 });
 
-// Ativa o SW e remove caches antigos
-self.addEventListener('activate', event => {
+// Ativação do Service Worker e limpeza de caches antigos
+self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => {
-          if(key !== CACHE_NAME) return caches.delete(key);
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(name => {
+          if(name !== CACHE_NAME) return caches.delete(name);
         })
-      )
-    )
+      );
+    })
   );
-  self.clients.claim();
+  self.clients.claim(); // assume controle imediato
 });
 
-// Intercepta requisições e retorna do cache, se possível
-self.addEventListener('fetch', event => {
+// Intercepta requisições e retorna do cache ou da rede
+self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request)
-    .then(response => response || fetch(event.request))
-    .catch(() => caches.match('/index.html'))
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
   );
 });
