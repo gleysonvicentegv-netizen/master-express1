@@ -9,12 +9,14 @@
 <link rel="apple-touch-icon" href="logo.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f2f2f2; }
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#ebebeb; } /* fundo cinza claro */
 .container { max-width:500px; margin:20px auto; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.2); position:relative;}
 .logo { text-align:center; margin-bottom:10px; }
 .logo img { width:120px; }
 h2 { text-align:center; margin-bottom:15px; }
 input, textarea, select { width:100%; padding:10px; margin:6px 0; border-radius:8px; border:1px solid #ccc; font-size:16px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+input[type="number"] { -moz-appearance:textfield; } /* remove setas no Firefox */
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } /* remove setas no Chrome */
 button { width:100%; padding:12px; margin-top:10px; border:none; border-radius:8px; font-size:16px; cursor:pointer; box-shadow:0 4px 8px rgba(0,0,0,0.1); transition:0.2s; }
 button:hover { transform:scale(1.02); }
 .whatsapp { background:#25D366; color:white; }
@@ -42,6 +44,8 @@ button:hover { transform:scale(1.02); }
 <button class="gps" onclick="usarLocalizacao()">📍 Usar minha localização</button>
 
 <input type="text" id="endEntrega" placeholder="Endereço de entrega">
+<input type="number" id="numResidencia" placeholder="Número da residência (opcional)">
+
 <select id="pagamento">
   <option value="">Forma de pagamento</option>
   <option>Pix</option>
@@ -87,24 +91,30 @@ function usarLocalizacao() {
   });
 }
 
-function marcarEntrega() {
+// Marca endereço automaticamente quando digita
+async function marcarEntrega() {
   let endereco = document.getElementById("endEntrega").value;
-  if(!endereco) return alert("Digite o endereço de entrega");
-  let viewbox = "-41.9,-22.5,-41.6,-22.2"; // restringe Macaé
-  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&viewbox=${viewbox}&bounded=1&limit=5`)
-  .then(res=>res.json())
-  .then(data=>{
-    if(!data[0]) return alert("Endereço de entrega não encontrado em Macaé!");
+  let numero = document.getElementById("numResidencia").value;
+  if(!endereco) return;
+  let enderecoCompleto = numero ? `${endereco}, ${numero}, Macaé` : `${endereco}, Macaé`;
+
+  try {
+    let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(enderecoCompleto)}&limit=1`);
+    let data = await res.json();
+    if(!data[0]) return;
     let lat=parseFloat(data[0].lat), lon=parseFloat(data[0].lon);
     if(markerEntrega) map.removeLayer(markerEntrega);
     markerEntrega = L.marker([lat,lon], {draggable:true}).addTo(map).bindPopup("Entrega").openPopup();
     map.setView([lat,lon],15);
-    calcularPreco();
     markerEntrega.on("drag", calcularPreco);
-  });
+    calcularPreco();
+  } catch(err) {
+    console.error(err);
+  }
 }
 
-document.getElementById("endEntrega").addEventListener("change", marcarEntrega);
+document.getElementById("endEntrega").addEventListener("input", marcarEntrega);
+document.getElementById("numResidencia").addEventListener("input", marcarEntrega);
 
 function calcularPreco() {
   if(!markerColeta || !markerEntrega) return;
@@ -128,13 +138,15 @@ function enviarPedido() {
   let preco = document.getElementById("preco").innerText;
   let pag = document.getElementById("pagamento").value;
   let entrega = document.getElementById("endEntrega").value;
+  let numero = document.getElementById("numResidencia").value;
+  let enderecoFinal = numero ? `${entrega}, nº ${numero}` : entrega;
   let urgente = document.getElementById("urgente").checked ? "Sim" : "Não";
 
   let msg = `🚀 *NOVO PEDIDO MASTER EXPRESS*
 👤 Remetente: ${nomeR}
 📞 Telefone: ${telR}
 📍 Local remetente: ${endR}
-📦 Entrega: ${entrega}
+📦 Entrega: ${enderecoFinal}
 👥 Recebedor: ${nomeRec}
 📞 Telefone do recebedor: ${telRec}
 💰 ${preco}
