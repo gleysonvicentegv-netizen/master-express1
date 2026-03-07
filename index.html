@@ -19,12 +19,13 @@ button { width:100%; padding:12px; margin-top:10px; border:none; border-radius:8
 button:hover { transform:scale(1.02); }
 .whatsapp { background:#25D366; color:white; }
 .gps { background:#007bff; color:white; }
-.addEntrega { background:#ff9800; color:white; }
 .instalar { position:absolute; top:10px; right:10px; background:#ff9800; color:white; font-size:14px; padding:5px 10px; border-radius:6px; display:none; }
 #map { height:250px; border-radius:8px; margin:10px 0; }
 .footer { text-align:center; font-size:14px; color:#555; margin-top:10px; }
 .urgente-label { font-size:14px; margin-top:5px; display:block; }
-.entrega-block { border:1px solid #ccc; padding:10px; border-radius:8px; margin-top:10px; background:#fafafa; }
+.entrega-bloco { border:1px solid #ccc; padding:10px; margin-top:10px; border-radius:8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+.entrega-bloco h3 { margin-top:0; }
+.add-entrega { background:#007bff; color:white; margin-top:10px; }
 </style>
 </head>
 <body>
@@ -38,22 +39,23 @@ button:hover { transform:scale(1.02); }
 <h2>Master Express</h2>
 <p>Entrega rápida no mesmo dia em Macaé</p>
 
-<input type="text" id="nomeRemetente" placeholder="Seu nome (Ex: João)" required>
-<input type="text" id="telRemetente" placeholder="Telefone (Ex: 22999999999)">
-<input type="text" id="endRemetente" placeholder="Endereço de coleta (Ex: Mercado Central)">
+<input type="text" id="nomeRemetente" placeholder="Seu nome (ex: João Silva)" required>
+<input type="text" id="telRemetente" placeholder="Telefone (ex: 22999999999)">
+<input type="text" id="endRemetente" placeholder="Endereço de coleta (ex: Rua A)">
+<input type="text" id="numRemetente" placeholder="Número da residência">
 <button class="gps" onclick="usarLocalizacao()">📍 Usar minha localização</button>
 
-<div id="entregas">
-  <!-- Entrega 1 -->
-  <div class="entrega-block" data-index="1">
+<div id="entregas-container">
+  <div class="entrega-bloco" data-index="1">
     <h3>Entrega 1</h3>
-    <input type="text" class="endEntrega" placeholder="Endereço de entrega">
+    <input type="text" class="endEntrega" placeholder="Endereço de entrega (ex: Rua B)">
+    <input type="text" class="numEntrega" placeholder="Número da residência">
     <input type="text" class="nomeRecebedor" placeholder="Nome do recebedor">
     <input type="text" class="telRecebedor" placeholder="Telefone do recebedor">
   </div>
 </div>
 
-<button type="button" class="addEntrega" onclick="adicionarEntrega()">+ Adicionar outra entrega</button>
+<button class="add-entrega" onclick="adicionarEntrega()">+ Adicionar mais uma entrega</button>
 
 <select id="pagamento">
   <option value="">Forma de pagamento</option>
@@ -84,8 +86,8 @@ button:hover { transform:scale(1.02); }
 let map = L.map('map').setView([-22.376, -41.784], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
 
-let markerColeta;
-let markersEntrega = [];
+let markerColeta, markersEntrega = [];
+let pedidoNumero = 100;
 
 function usarLocalizacao() {
   navigator.geolocation.getCurrentPosition(pos=>{
@@ -99,81 +101,91 @@ function usarLocalizacao() {
   });
 }
 
-// Adiciona nova entrega
-function adicionarEntrega(){
-  let entregasDiv = document.getElementById("entregas");
-  let index = entregasDiv.children.length + 1;
-  let div = document.createElement("div");
-  div.className = "entrega-block";
-  div.setAttribute("data-index", index);
-  div.innerHTML = `<h3>Entrega ${index}</h3>
-    <input type="text" class="endEntrega" placeholder="Endereço de entrega">
+function adicionarEntrega() {
+  let container = document.getElementById("entregas-container");
+  let index = container.children.length + 1;
+  let bloco = document.createElement("div");
+  bloco.className = "entrega-bloco";
+  bloco.setAttribute("data-index", index);
+  bloco.innerHTML = `
+    <h3>Entrega ${index}</h3>
+    <input type="text" class="endEntrega" placeholder="Endereço de entrega (ex: Rua B)">
+    <input type="text" class="numEntrega" placeholder="Número da residência">
     <input type="text" class="nomeRecebedor" placeholder="Nome do recebedor">
-    <input type="text" class="telRecebedor" placeholder="Telefone do recebedor">`;
-  entregasDiv.appendChild(div);
+    <input type="text" class="telRecebedor" placeholder="Telefone do recebedor">
+  `;
+  container.appendChild(bloco);
+  bloco.querySelector(".endEntrega").addEventListener("change", marcarEntrega);
 }
 
-// Sugestão de endereço usando OpenStreetMap
-async function sugerirEndereco(input){
-  let query = input.value;
-  if(query.length<3) return;
-  let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=-41.9,-22.5,-41.6,-22.2&bounded=1&limit=5`;
-  let res = await fetch(url);
-  let data = await res.json();
-  if(data.length>0){
-    input.value = data[0].display_name; // pega o primeiro resultado
+function marcarEntrega(e) {
+  let input = e.target;
+  let endereco = input.value;
+  if(!endereco) return;
+  let viewbox = "-41.9,-22.5,-41.6,-22.2";
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&viewbox=${viewbox}&bounded=1&limit=5`)
+  .then(res=>res.json())
+  .then(data=>{
+    if(!data[0]) return alert("Endereço de entrega não encontrado em Macaé!");
+    let lat=parseFloat(data[0].lat), lon=parseFloat(data[0].lon);
+    let index = input.closest(".entrega-bloco").getAttribute("data-index")-1;
+    if(markersEntrega[index]) map.removeLayer(markersEntrega[index]);
+    markersEntrega[index] = L.marker([lat,lon], {draggable:true}).addTo(map).bindPopup(`Entrega ${index+1}`).openPopup();
+    map.setView([lat,lon],15);
+    markersEntrega[index].on("drag", calcularPreco);
     calcularPreco();
-  }
-}
-
-// Calcular preço total
-function calcularPreco(){
-  if(!markerColeta) return;
-  let precoTotal = 0;
-  let adicional = document.getElementById("urgente").checked ? 1.7 : 2.0;
-  let from = turf.point([markerColeta.getLatLng().lng, markerColeta.getLatLng().lat]);
-  markersEntrega.forEach(marker=>{
-    let to = turf.point([marker.getLatLng().lng, marker.getLatLng().lat]);
-    let distancia = turf.distance(from,to,{units:'kilometers'});
-    let preco = 10;
-    if(distancia>3) preco += (distancia-3)*adicional;
-    precoTotal += preco;
   });
-  document.getElementById("preco").innerText = "Valor da entrega: R$"+precoTotal.toFixed(2);
 }
 
-// Enviar pedido via WhatsApp
-let pedidoNum = 100;
-function enviarPedido(){
-  if(!markerColeta || markersEntrega.length===0) return alert("Marque a coleta e pelo menos uma entrega no mapa");
+document.querySelectorAll(".endEntrega").forEach(el=>{
+  el.addEventListener("change", marcarEntrega);
+});
+
+function calcularPreco() {
+  if(!markerColeta || markersEntrega.length===0) return;
+  let total = 0;
+  let from = turf.point([markerColeta.getLatLng().lng, markerColeta.getLatLng().lat]);
+  markersEntrega.forEach(m=>{
+    let to = turf.point([m.getLatLng().lng, m.getLatLng().lat]);
+    let dist = turf.distance(from,to,{units:'kilometers'});
+    let preco = 10;
+    let adicional = document.getElementById("urgente").checked ? 1.7 : 2.0;
+    if(dist>3) preco = 10 + ((dist-3)*adicional);
+    total += preco;
+  });
+  document.getElementById("preco").innerText = "Valor da entrega: R$"+total.toFixed(2);
+}
+
+function enviarPedido() {
+  if(!markerColeta || markersEntrega.length===0) return alert("Marque a coleta e entrega no mapa");
   let nomeR = document.getElementById("nomeRemetente").value;
   let telR = document.getElementById("telRemetente").value;
   let endR = document.getElementById("endRemetente").value;
+  let numR = document.getElementById("numRemetente").value;
   let obs = document.getElementById("observacoes").value || "Não informado";
+  let preco = document.getElementById("preco").innerText;
   let pag = document.getElementById("pagamento").value;
 
-  let mensagem = `📦 NOVO PEDIDO #${pedidoNum}\n\nCliente: ${nomeR}\nTelefone: ${telR}\nColeta: ${endR}\n\n`;
+  let msg = `🚀 *NOVO PEDIDO MASTER EXPRESS* (#${pedidoNumero++})
+👤 Remetente: ${nomeR}
+📞 Telefone: ${telR}
+📍 Local remetente: ${endR}, Nº ${numR}
+💰 ${preco}
+💳 Pagamento: ${pag}
+⚠ Urgente: ${document.getElementById("urgente").checked ? "Sim" : "Não"}
+📝 Observações: ${obs}
+`;
 
-  markersEntrega.forEach((marker,i)=>{
-    let idx = i+1;
-    let entregaDiv = document.querySelector(`.entrega-block[data-index="${idx}"]`);
-    let end = entregaDiv.querySelector(".endEntrega").value;
-    let nomeRec = entregaDiv.querySelector(".nomeRecebedor").value;
-    let telRec = entregaDiv.querySelector(".telRecebedor").value;
-    mensagem += `📦 Entrega ${idx}\n${end}\nRecebedor: ${nomeRec}\nTel: ${telRec}\n\n`;
+  markersEntrega.forEach((m,index)=>{
+    let bloco = document.querySelector(`.entrega-bloco[data-index="${index+1}"]`);
+    let end = bloco.querySelector(".endEntrega").value;
+    let num = bloco.querySelector(".numEntrega").value;
+    let nome = bloco.querySelector(".nomeRecebedor").value;
+    let tel = bloco.querySelector(".telRecebedor").value;
+    msg += `📦 Entrega ${index+1}: ${end}, Nº ${num}\n👥 Recebedor: ${nome}\n📞 Tel: ${tel}\n`;
   });
 
-  let rotas = markersEntrega.length;
-  let preco = document.getElementById("preco").innerText.split("R$")[1];
-  mensagem += `Rotas: ${rotas}\nValor total: R$${preco}\nObservações: ${obs}`;
-
-  window.open("https://wa.me/5522992150249?text="+encodeURIComponent(mensagem));
-  pedidoNum++;
-}
-
-// Registrar SW
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js");
+  window.open("https://wa.me/5522992150249?text="+encodeURIComponent(msg));
 }
 
 // PWA
@@ -187,26 +199,8 @@ document.getElementById("btnInstall").addEventListener("click", async ()=>{
   if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; }
 });
 
-// Adicionar marcadores quando digitam endereço
-document.addEventListener("input", e=>{
-  if(e.target.classList.contains("endEntrega")){
-    sugerirEndereco(e.target);
-    let idx = parseInt(e.target.parentNode.getAttribute("data-index"))-1;
-    let endereco = e.target.value;
-    if(!endereco) return;
-    let viewbox = "-41.9,-22.5,-41.6,-22.2";
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&viewbox=${viewbox}&bounded=1&limit=5`)
-    .then(res=>res.json())
-    .then(data=>{
-      if(!data[0]) return;
-      let lat=parseFloat(data[0].lat), lon=parseFloat(data[0].lon);
-      if(markersEntrega[idx]) map.removeLayer(markersEntrega[idx]);
-      markersEntrega[idx] = L.marker([lat,lon], {draggable:true}).addTo(map).bindPopup(`Entrega ${idx+1}`).openPopup();
-      calcularPreco();
-      markersEntrega[idx].on("drag", calcularPreco);
-    });
-  }
-});
+// SW
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js"); }
 </script>
 </body>
 </html>
