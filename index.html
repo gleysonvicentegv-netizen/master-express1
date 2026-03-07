@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="logo.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f2f2f2; }
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#ebebeb; } /* fundo cinza claro */
 .container { max-width:500px; margin:20px auto; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.2); position:relative;}
 .logo { text-align:center; margin-bottom:10px; }
 .logo img { width:120px; }
@@ -76,7 +76,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }
 
 let markerColeta, markerEntrega;
 
-// Função para usar localização do remetente
 function usarLocalizacao() {
   navigator.geolocation.getCurrentPosition(pos=>{
     let lat=pos.coords.latitude, lon=pos.coords.longitude;
@@ -89,18 +88,17 @@ function usarLocalizacao() {
   });
 }
 
-// Função para marcar automaticamente o endereço de entrega digitado
+// Marcar automaticamente endereço de entrega
 async function marcarEntrega() {
   let endereco = document.getElementById("endEntrega").value;
   if(!endereco) return;
   let numero = document.getElementById("numeroEntrega").value;
   let enderecoCompleto = numero ? `${endereco}, ${numero}, Macaé` : `${endereco}, Macaé`;
 
-  // Busca coordenadas no Nominatim
   try {
     let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(enderecoCompleto)}&limit=1`);
     let data = await res.json();
-    if(!data[0]) return alert("Endereço de entrega não encontrado em Macaé!");
+    if(!data[0]) return;
     let lat=parseFloat(data[0].lat), lon=parseFloat(data[0].lon);
     if(markerEntrega) map.removeLayer(markerEntrega);
     markerEntrega = L.marker([lat,lon], {draggable:true}).addTo(map).bindPopup("Entrega").openPopup();
@@ -108,15 +106,13 @@ async function marcarEntrega() {
     calcularPreco();
     markerEntrega.on("drag", calcularPreco);
   } catch(err) {
-    alert("Erro ao buscar endereço de entrega.");
+    console.error("Erro ao buscar endereço:", err);
   }
 }
 
-// Sempre que digitar algo no campo de entrega, já marca no mapa
 document.getElementById("endEntrega").addEventListener("input", marcarEntrega);
 document.getElementById("numeroEntrega").addEventListener("input", marcarEntrega);
 
-// Calcula preço da entrega
 function calcularPreco() {
   if(!markerColeta || !markerEntrega) return;
   let from = turf.point([markerColeta.getLatLng().lng, markerColeta.getLatLng().lat]);
@@ -129,7 +125,6 @@ function calcularPreco() {
   document.getElementById("preco").innerText = "Valor da entrega: R$"+preco;
 }
 
-// Envia pedido para WhatsApp
 function enviarPedido() {
   if(!markerColeta || !markerEntrega) return alert("Marque a coleta e entrega no mapa");
   let nomeR = document.getElementById("nomeRemetente").value;
@@ -174,7 +169,6 @@ document.getElementById("btnInstall").addEventListener("click", async ()=>{
   if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; }
 });
 
-// Registrar SW
 if("serviceWorker" in navigator){
   navigator.serviceWorker.register("sw.js");
 }
