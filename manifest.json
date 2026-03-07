@@ -1,11 +1,10 @@
 {
   "name": "Master Express",
-  "short_name": "Master",
-  "start_url": "https://gleysonvicentegv-netizen.github.io/master-express1/",
+  "short_name": "MasterExpress",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#25D366",
-  "orientation": "portrait",
+  "background_color": "#333333",
+  "theme_color": "#333333",
   "icons": [
     {
       "src": "logo.png",
